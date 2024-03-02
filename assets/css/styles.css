@@ -176,6 +176,57 @@ body {
     background-color: #ADD8E6;
 }
 
+table {
+    border-collapse: collapse;
+    width: 80%;
+    margin: 50px auto;
+    background-color: rgba(253, 188, 180, 0.8);
+    border-radius: 20px;
+}
+
+th, td {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+}
+
+th {
+    background-color: #f2f2f2;
+}
+
+/* Estilos para el contenedor de la tabla */
+.table-container {
+    background-color: #ADD8E6;
+    border-radius: 20px;
+    max-width: 90%; /* Cambiar el ancho del contenedor */
+    margin: 0 auto;
+    padding: 20px;
+    
+}
+
+.score-table {
+    border-collapse: collapse;
+    width: 90%; /* Cambiar el ancho de la tabla */
+    margin: 0 auto; /* Centrar la tabla horizontalmente */
+}
+
+/* Estilos para el título de la tabla */
+.table-title {
+    text-align: center;
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+.score-table th, .score-table td {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+}
+
+.score-table th {
+    background-color: #f2f2f2;
+}
+
 
 
 
