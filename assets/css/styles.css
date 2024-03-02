@@ -63,6 +63,122 @@ body {
     opacity: 0.8; 
 }
 
+#settings {
+    width: 300px;
+    margin: 50px auto; 
+    text-align: center;
+    background-color: rgba(253, 188, 180, 0.8); 
+    padding: 40px;
+    border-radius: 20px;
+}
+
+#settings h1 {
+    color: white;
+    font-size: 36px;
+    margin-bottom: 20px;
+}
+
+#settings ul {
+    list-style: none;
+    padding: 0;
+}
+
+#settings li {
+    margin-bottom: 20px;
+}
+
+#settings a {
+    text-decoration: none;
+    color: white; 
+    background-color: #ADD8E6; 
+    padding: 15px 30px; 
+    border-radius: 30px; 
+    display: inline-block;
+    transition: background-color 0.3s;
+    width: 200px; 
+    font-size: 20px; 
+}
+
+#settings a:hover {
+    background-color: #87CEEB; 
+}
+
+.language-options input[type="radio"] {
+    display: none; 
+    margin-top: 10px;
+}
+
+.language-options label {
+    cursor: pointer; 
+    padding: 5px 10px; 
+    margin-right: 10px; 
+    border-radius: 5px; 
+    margin-top: 10px; /* Add margin-top to create vertical space */
+    margin-bottom: 10px; /* Add margin-bottom for additional spacing */
+    background-color: #ADD8E6; 
+    color: white; 
+}
+
+/* Agrega un identificador de clase para aumentar la especificidad */
+.language-options .language-label {
+    margin-top: 10px; /* Ajusta el margen-top según sea necesario */
+    margin-bottom: 10px; /* Ajusta el margen-bottom según sea necesario */
+}
+
+.language-options input[type="radio"]:checked + label {
+    background-color: #87CEEB; 
+}
+
+.volume-bar {
+    width: 80%; /* Ancho de la barra de sonido */
+    margin: 0 auto; /* Centrado horizontal */
+}
+
+#volume-slider {
+    width: 100%; /* Ancho completo de la barra de desplazamiento */
+    height: 10px; /* Altura de la barra de desplazamiento */
+    -webkit-appearance: none; /* Eliminar estilos predeterminados del navegador */
+    appearance: none;
+    background-color: #ADD8E6; /* Color de fondo de la barra de desplazamiento */
+    border-radius: 5px; /* Bordes redondeados */
+    outline: none; /* Eliminar el contorno al hacer clic */
+}
+
+#volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; /* Eliminar estilos predeterminados del navegador */
+    appearance: none;
+    width: 20px; /* Ancho del control deslizante */
+    height: 20px; /* Altura del control deslizante */
+    background-color: #FFFFFF; /* Color del control deslizante */
+    border-radius: 50%; /* Bordes redondeados */
+    cursor: pointer; /* Cambiar el cursor al pasar sobre el control deslizante */
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3); /* Sombra del control deslizante */
+}
+
+#volume-slider::-moz-range-thumb {
+    width: 20px; /* Ancho del control deslizante */
+    height: 20px; /* Altura del control deslizante */
+    background-color: #FFFFFF; /* Color del control deslizante */
+    border-radius: 50%; /* Bordes redondeados */
+    cursor: pointer; /* Cambiar el cursor al pasar sobre el control deslizante */
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3); /* Sombra del control deslizante */
+}
+
+#settings label {
+    color: white; /* Color del texto */
+    font-size: 18px; /* Tamaño de la fuente */
+    margin-bottom: 10px; /* Espaciado inferior */
+}
+
+
+
+#back.return-button {
+    background-color: #ADD8E6;
+}
+
+
+
+
 /* Colores específicos de la paleta */
 :root {
     --soft-green: #98FB98;
