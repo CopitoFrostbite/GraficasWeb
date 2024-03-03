@@ -234,6 +234,6 @@ th {
 :root {
     --soft-green: #98FB98;
     --light-brown: #D2B48C;
-    --pale-pink: #FDBCB4;
+    --pale-pink: rgb(253, 188, 180);
     --light-blue: #ADD8E6;
 }
