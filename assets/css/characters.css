@@ -1,0 +1,18 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-image: url('../pictures/bg.jpg');
+    background-size: cover;
+    font-family: 'Arial', sans-serif;
+}
+
+#content {
+    width: 90%;
+
+    margin: 120px auto; 
+    text-align: center;
+    background-color: rgba(253, 188, 180, 0.8); 
+    padding: 40px;
+    border-radius: 20px;
+    position: relative;
+}
