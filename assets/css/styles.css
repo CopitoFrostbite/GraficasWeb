@@ -55,6 +55,35 @@ body {
     background-color: #87CEEB; 
 }
 
+
+
+#score1 {
+    text-align: center;
+    list-style: none;
+    padding: 0;
+}
+
+#score2 {
+    margin-bottom: 20px;
+}
+
+#score3 {
+    text-decoration: none;
+    color: white; 
+    background-color: #ADD8E6; 
+    padding: 15px 30px; 
+    border-radius: 40px;
+    display: inline-block;
+    transition: background-color 0.3s;
+    width: 240px; 
+    font-size: 30px;
+}
+
+#main-menu a:hover {
+    background-color: #87CEEB; 
+}
+
+
 .art {
     display: block;
     margin: 0px auto; 
