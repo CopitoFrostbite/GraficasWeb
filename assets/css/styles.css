@@ -142,8 +142,8 @@ body {
     padding: 5px 10px; 
     margin-right: 10px; 
     border-radius: 5px; 
-    margin-top: 10px; /* Add margin-top to create vertical space */
-    margin-bottom: 10px; /* Add margin-bottom for additional spacing */
+    margin-top: 10px; 
+    margin-bottom: 10px; 
     background-color: #ADD8E6; 
     color: white; 
 }
