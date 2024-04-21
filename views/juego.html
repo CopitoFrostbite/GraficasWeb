@@ -17,6 +17,7 @@
   import Player from './scripts/player.js';
   import PlayerControls from './scripts/playerControls.js';
   import PlayerControls2 from './scripts/playerControls2.js';
+  import { checkPlayerCollisions } from './scripts/physics.js';
   const scene = new THREE.Scene();
   const loader = new THREE.TextureLoader();
   
@@ -45,10 +46,23 @@
   const mixers = [];
   const loaderGLTF = new GLTFLoader();
   const clock = new THREE.Clock();
+  const textureLoader = new THREE.TextureLoader();
+  
   async function init() {
     // Cargar el entorno
     const terreno = await cargarModeloEnPosicion('./modelos/low-poly_ice_world.glb', new THREE.Vector3(0, 0, 0), new THREE.Vector3(1.3, 1.3, 1.3));
+    const iceTexture = textureLoader.load('./modelos/iceTex.jpg', function (texture) {
+    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(1, 1); // Ajusta esto según la escala de tu modelo
 
+    // Asignar la textura de hielo al material del terreno
+    terreno.traverse(function (child) {
+        if (child.isMesh) {
+            child.material.map = texture;
+            child.material.needsUpdate = true;
+        }
+      });
+    });
     // Cargar objetos estáticos como árboles
     const posicionesPinos = [
       new THREE.Vector3(-20, 0, 0),      
@@ -78,8 +92,8 @@
     
     const playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
     const playerMesh2 = new THREE.Mesh(playerGeometry, playerMaterial2);
-    playerMesh.position.set(0, 1, 0); // La posición inicial del jugador en la escena
-    playerMesh2.position.set(2, 1, 0);
+    playerMesh.position.set(0, 2, 0); // La posición inicial del jugador en la escena
+    playerMesh2.position.set(2, 2, 0);
      // Asegurar que el renderer dom element puede recibir eventos de teclado
     renderer.domElement.tabIndex = '0';
     renderer.domElement.focus();
@@ -130,7 +144,7 @@
   
   function animate() {
     requestAnimationFrame(animate);
-    
+    let players = [];
     const now = Date.now();
     const deltaTime = clock.getDelta(); // tiempo en segundos
     
@@ -138,12 +152,14 @@
     // Actualizar todos los mixers
     mixers.forEach(mixer => mixer.update(deltaTime));
     if (player) {
-      player.update(deltaTime);
+        player.update(deltaTime); // Aquí asumimos que update maneja la física del terreno
+        players.push(player); // Agregamos al jugador al array para la detección de colisión posterior
     }
     if (player2) {
-      player.update(deltaTime);
+        player2.update(deltaTime); // Igual para el segundo jugador
+        players.push(player2);
     }
-   
+    checkPlayerCollisions(players);
     if (rayoModel) {
     rayoModel.rotation.y += 0.01; // Ajusta esto para cambiar la velocidad de la rotación
   }

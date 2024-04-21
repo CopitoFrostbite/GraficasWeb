@@ -12,6 +12,8 @@ class Player {
         this.friction = 0.98
         this.jumpForce = 15;
         this.isGrounded = false; // Si el jugador está en el suelo o no
+        this.hitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+        this.hitbox.setFromObject(this.mesh);
     }
 
     update(deltaTime) {
@@ -19,6 +21,7 @@ class Player {
         this.handleInput(deltaTime);
         this.handlePhysics(deltaTime);
         this.checkOutOfBounds();
+        this.hitbox.setFromObject(this.mesh);
     }
 
     handleInput(deltaTime) {

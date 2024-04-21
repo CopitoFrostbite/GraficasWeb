@@ -33,9 +33,9 @@
             
                 this.moveState.right = true;
                 break;
-            case 'Space':
-                this.jump = true;
-                break;
+             case 'ShiftRight':
+                 this.jump = true;
+                 break;
         }
     }
 
@@ -57,7 +57,7 @@
             
                 this.moveState.right = false;
                 break;
-            case 'Space':
+            case 'ShiftRight':
                 this.jump = false;
                 break;
         }

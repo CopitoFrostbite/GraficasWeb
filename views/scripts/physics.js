@@ -36,5 +36,17 @@ function updatePhysics(player, deltaTime, terrainMesh) {
     }
 }
 
+function checkPlayerCollisions(players) {
+    for (let i = 0; i < players.length - 1; i++) {
+        for (let j = i + 1; j < players.length; j++) {
+            if (players[i].hitbox.intersectsBox(players[j].hitbox)) {
+                // Manejar colisión entre players[i] y players[j]
+                console.log(`Player ${players[i].id} ha colisionado con Player ${players[j].id}`);
+                // Aquí aplicas la lógica que desees como resultado de la colisión
+            }
+        }
+    }
+}
 
-export { updatePhysics };
+
+export { updatePhysics, checkPlayerCollisions };
