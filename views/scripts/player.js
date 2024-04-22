@@ -2,16 +2,32 @@ import * as THREE from '../three.module.js';
 import { updatePhysics } from './physics.js';
 
 class Player {
-    constructor(id,mesh, controls, scene, terrainMesh) {
+    constructor(id, gltf,characterName, controls, scene, terrainMesh) {
         this.id = id;
-        this.mesh = mesh; // El mesh del personaje en Three.js
-        this.controls = controls; // Un objeto que maneja las entradas del usuario
-        this.scene = scene; // La escena a la que pertenece el jugador
+        this.characterName = characterName;
+        this.mesh = gltf.scene; 
+        this.animations = {};
+        this.animationsMap = {};
+        this.mixer = new THREE.AnimationMixer(this.mesh);
+       
+        this.currentAction = null;
+       
+        gltf.animations.forEach((clip) => {
+            console.log(`Cargando animación: ${clip.name}`); //  nombre real de la animación
+            this.animations[clip.name] = clip;
+            this.mixer.clipAction(clip);
+        });
+        this.animationsMap = {
+            Run: 'Armature|mixamo.com|Layer0',
+            
+        };
+        this.controls = controls; 
+        this.scene = scene; 
         this.terrainMesh = terrainMesh;
-        this.velocity = new THREE.Vector3(); // Velocidad actual del jugador
+        this.velocity = new THREE.Vector3(); 
         this.friction = 0.98
         this.jumpForce = 15;
-        this.isGrounded = false; // Si el jugador está en el suelo o no
+        this.isGrounded = false; 
         this.hitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
         this.hitbox.setFromObject(this.mesh);
     }
@@ -20,33 +36,93 @@ class Player {
         // Actualiza la lógica del jugador cada frame
         this.handleInput(deltaTime);
         this.handlePhysics(deltaTime);
+        this.mesh.position.addScaledVector(this.velocity, deltaTime);
+        this.velocity.multiplyScalar(this.friction);
         this.checkOutOfBounds();
         this.hitbox.setFromObject(this.mesh);
+        const currentPosition = this.mesh.position.clone();
+
+        // Actualiza el mixer para procesar la animación
+        if (this.mixer) {
+            this.mixer.update(deltaTime);
+        }
+    
+        // Después de la actualización de la animación, restablece la posición del personaje
+        this.mesh.position.copy(currentPosition);
+        
     }
 
     handleInput(deltaTime) {
         const movement = this.controls.getMovement();
         const acceleration = 70.0;
        // Aplicar entradas de movimiento
-        if (movement.forward) {
+        if (movement.forward ) {
             this.velocity.z -= acceleration * deltaTime;
+           
         }
-        if (movement.backward) {
+       
+        if (movement.backward ) {
             this.velocity.z += acceleration * deltaTime;
+          
         }
-        if (movement.left) {
+        if (movement.left ) {
             this.velocity.x -= acceleration * deltaTime;
+           
         }
-        if (movement.right) {
+        if (movement.right ) {
             this.velocity.x += acceleration * deltaTime;
+            this.playAnimation( "Run");
+            this.isRunning = true;
+        }
+        if (!movement.right ) {
+            
+            this.stopAnimation( "Run");
+            this.isRunning = false;
         }
         if (movement.jump && this.isGrounded) {
-            this.velocity.y += this.jumpForce; // Aplica la fuerza de salto
-            this.isGrounded = false; // Asegúrate de que no se pueda saltar de nuevo hasta aterrizar
+            this.velocity.y += this.jumpForce; 
+            this.isGrounded = false; 
         }
+
+       
         
         
         
+    }
+
+    playAnimation(name) {
+        // Busca la acción con el nombre 'Run' en el mixer del jugador.
+        const action = this.mixer._actions.find(action => action._clip.name === name);
+        if (action) {
+            if (this.currentAction !== action) {
+                if (this.currentAction) {
+                    this.currentAction.fadeOut(0.5);
+                }
+                action.reset().fadeIn(0.5).play();
+                this.currentAction = action;
+            }
+        } else {
+            console.warn(`Animation ${name} not found for character ${this.characterName}`);
+        }
+    }
+
+    stopAnimation(name) {
+        const action = this.mixer._actions.find(action => action._clip.name === name);
+        if (action) {
+            
+            action.fadeOut(0.5);
+            
+            action.onFinish = () => {
+                action.stop(); 
+            };
+    
+            
+            if (this.currentAction === action) {
+                this.currentAction = null;
+            }
+        } else {
+            console.warn(`Animation ${name} not found for character ${this.characterName}`);
+        }
     }
 
     handlePhysics(deltaTime) {
@@ -57,7 +133,7 @@ class Player {
 
         // Aplicar la velocidad al mesh del jugador
         this.mesh.position.addScaledVector(this.velocity, deltaTime);
-         // Resetear la velocidad en x y z para detener el movimiento si no hay entradas
+         
         
        
     }
@@ -65,7 +141,7 @@ class Player {
     checkOutOfBounds() {
         // Comprueba si el jugador ha salido del escenario y actúa en consecuencia
         if (this.mesh.position.y < -10) {
-            // Aquí manejarías lo que sucede cuando el jugador cae fuera del escenario
+            // Aquí  falta agregar logica cuando el jugador cae fuera del escenario
             console.log('Jugador fuera del escenario');
         }
     }
