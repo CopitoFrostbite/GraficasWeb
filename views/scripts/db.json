@@ -1,0 +1,30 @@
+{
+    "users": {
+      "userID1": {
+        "uid": "userID1",
+        "displayName": "Player One",
+        "email": "playerone@example.com"
+      },
+      "userID2": {
+        "uid": "userID2",
+        "displayName": "Player Two",
+        "email": "playertwo@example.com"
+      }
+    },
+    "rooms": {
+      "roomID1": {
+        "players": {
+          "player1": {
+            "uid": "userID1",
+            "characterName": "Character1",
+            "position": { "x": 0, "y": 0, "z": 0 },
+            "velocity": { "x": 0, "y": 0, "z": 0 },
+            "tackleState": "idle",
+            "hitbox": { "min": { "x": -0.5, "y": -0.5, "z": -0.5 }, "max": { "x": 0.5, "y": 0.5, "z": 0.5 } },
+            "tackleHitbox": { "min": { "x": -0.5, "y": -0.5, "z": -0.5 }, "max": { "x": 0.5, "y": 0.5, "z": 0.5 } }
+          }
+        }
+      }
+    }
+  }
+  

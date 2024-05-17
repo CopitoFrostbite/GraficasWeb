@@ -1,0 +1,13 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-image: url('../pictures/bg.jpg');
+    background-size: cover;
+    font-family: 'Arial', sans-serif;
+}
+
+img{
+    width: 2%;
+    height: 2%;
+    padding: 1%;
+}

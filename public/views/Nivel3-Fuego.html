@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nivel Cañon</title>
+    <style>
+        body {
+          margin: 0;
+        }
+      </style>
+</head>
+<body>
+
+    <script type="module">
+        import * as THREE from "./three.module.js";
+      import { OrbitControls } from "./OrbitControls.js";
+      import { STLLoader } from "./STLLoader.js";
+      import { GLTFLoader } from "./GLTFLoader.js";
+
+      const scene = new THREE.Scene();
+      const loader = new THREE.TextureLoader();
+      loader.load("./fondo3.jpg", function (texture) {
+        scene.background = texture;
+      });
+
+      const camera = new THREE.PerspectiveCamera(60,window.innerWidth / window.innerHeight);
+      camera.position.set(0, 50, 0);
+
+      const hemisphereLight = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
+      scene.add(hemisphereLight);
+
+      
+      const renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+      const cameraControl = new OrbitControls(camera, renderer.domElement);
+
+
+      const loaderGLTF = new GLTFLoader();
+      //desierto
+      loaderGLTF.load(
+        "./modelos/terreno3.glb",
+        function (model) {
+          const obj = model.scene;
+          obj.scale.set(0.1, 0.1, 0.1);
+         // obj.rotateX(Math.PI / 2);
+          scene.add(obj);
+        }
+      );
+
+
+    
+/*Funcion para cargar rocas
+function cargarModeloEnPosicion(posicion) {
+    loaderGLTF.load(
+        "./modelos/roca1.glb",
+        function (model) {
+            const obj = model.scene.clone(); 
+            obj.position.copy(posicion); 
+            obj.scale.set(3, 3, 3);
+            scene.add(obj); 
+        }
+    );
+}
+
+// Se agregan pino
+cargarModeloEnPosicion(new THREE.Vector3(-20, 2, 0));
+cargarModeloEnPosicion(new THREE.Vector3(3, 2, -17));
+cargarModeloEnPosicion(new THREE.Vector3(20, 2, 4));
+cargarModeloEnPosicion(new THREE.Vector3(20, 2, 0));
+cargarModeloEnPosicion(new THREE.Vector3(0, 2, -20)); 
+cargarModeloEnPosicion(new THREE.Vector3(0, 1, 20)); 
+
+*/
+
+
+//tigre
+loaderGLTF.load(
+    "./modelos/tiger_monster_-_animated.glb",
+    function (gltf) {
+        console.log("Modelo cargado correctamente:", gltf);
+        const model = gltf.scene;
+        const animations = gltf.animations;
+
+        // Escalar y posicionar el modelo
+        model.scale.set(3,3,3);
+        model.position.set(-6, -8, -17); 
+        scene.add(model);
+
+        // Crear un AnimationMixer y reproducir las animaciones
+        const mixer = new THREE.AnimationMixer(model);
+        animations.forEach((clip) => {
+            mixer.clipAction(clip).play();
+        });
+
+        // Función de animación
+        function animate() {
+            requestAnimationFrame(animate);
+            mixer.update(0.016); // Actualizar la animación con el tiempo delta
+            renderer.render(scene, camera);
+        }
+
+        animate(); // Iniciar la animación
+    },
+    // Función de progreso (opcional)
+    function (xhr) {
+        console.log((xhr.loaded / xhr.total * 100) + '% cargado');
+    },
+    // Función de manejo de errores (opcional)
+    function (error) {
+        console.error('Error al cargar el modelo:', error);
+    }
+);
+
+
+// Función para cargar el modelo de rayo y añadir una animación de rotación
+function cargarModeloConAnimacion(posicion) {
+    
+    loaderGLTF.load(
+        "./modelos/rayo.glb",
+        function (model) {
+            const obj = model.scene.clone(); 
+            obj.position.copy(posicion); 
+            obj.scale.set(0.8, 0.5, 0.8);
+            scene.add(obj); 
+
+            // Guardar el objeto en una variable para acceder a él en la función de animación
+            const rayoModel = obj;
+
+            // Función de animación
+            function animateRayo() {
+                // Rotar el modelo en el eje Y en cada cuadro de animación
+                rayoModel.rotation.y += 0.01; // Ajusta la velocidad de rotación según tus necesidades
+
+                // Renderizar la escena
+                renderer.render(scene, camera);
+
+                // Llamar a animateRayo() en el siguiente cuadro de animación
+                requestAnimationFrame(animateRayo);
+            }
+
+            // Iniciar la animación
+            animateRayo();
+        }
+    );
+}
+
+// Llamar a la función para cargar el modelo con animación
+cargarModeloConAnimacion(new THREE.Vector3(13, -5, 15));
+
+
+
+// Función para cargar modelo de roca en una posición específica y hacer que caiga después de un retraso
+function cargarModeloEnPosicionYCaerConRetraso(posicion, retraso) {
+    loaderGLTF.load(
+        "./modelos/meteor.glb",
+        function (model) {
+            const obj = model.scene.clone(); 
+            obj.position.copy(posicion); 
+            obj.scale.set(3, 3, 3);
+            scene.add(obj);
+
+            // Temporizador para iniciar la caída después de un retraso
+            setTimeout(() => {
+                iniciarCaída(obj);
+            }, retraso);
+
+            // Función para iniciar la caída de la roca
+            function iniciarCaída(roca) {
+                const velocidadDeCaída = 0.8; // Ajusta la velocidad de caída según sea necesario
+                animate();
+
+                function animate() {
+                    roca.position.y -= velocidadDeCaída;
+
+                    // Verificar si la roca ha llegado al suelo
+                    if (roca.position.y <= -7) {
+                        // Detener la animación
+                        return;
+                    }
+
+                    requestAnimationFrame(animate);
+                }
+            }
+        }
+    );
+}
+
+// Llamadas a la función para cargar y hacer caer los modelos de rocas con retraso
+cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(-17, 50, 0), 5000); // 5 segundos de retraso
+cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(3, 50, -17), 7000); // 7 segundos de retraso
+cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(20, 50, 4), 10000);
+cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(-7, 50, 20),15000); // 7 segundos de retraso
+cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(10, 50, 4), 17000); // 10 segundos de retraso
+// Agrega más llamadas para cargar más rocas con diferentes retrasos si es necesario
+
+
+
+
+/*
+
+// Función para cargar modelo de roca en una posición específica y hacer que caiga
+function cargarModeloEnPosicionYCaer(posicion) {
+    loaderGLTF.load(
+        "./modelos/meteor.glb",
+        function (model) {
+            const obj = model.scene.clone(); 
+            obj.position.copy(posicion); 
+            obj.scale.set(3, 3, 3);
+            scene.add(obj);
+
+            // Animación de caída
+            const velocidadDeCaída = 0.5; // Ajusta la velocidad de caída según sea necesario
+            animate();
+
+            function animate() {
+                obj.position.y -= velocidadDeCaída;
+                
+                // Verificar si la roca ha llegado al suelo
+                if (obj.position.y <= -7) {
+                    // Detener la animación
+                    return;
+                }
+
+                requestAnimationFrame(animate);
+            }
+        }
+    );
+}
+
+// Llamadas a la función para cargar y hacer caer los modelos de rocas
+cargarModeloEnPosicionYCaer(new THREE.Vector3(-17, 50, 0));
+cargarModeloEnPosicionYCaer(new THREE.Vector3(3, 50, -17));
+cargarModeloEnPosicionYCaer(new THREE.Vector3(20, 50, 4));
+cargarModeloEnPosicionYCaer(new THREE.Vector3(-7, 50, 20));
+cargarModeloEnPosicionYCaer(new THREE.Vector3(10, 50, 4));
+// Agrega más llamadas para cargar más rocas si es necesario
+
+*/
+      
+function animate() {
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+      }
+      animate();
+
+
+    </script>
+    
+</body>
+</html>

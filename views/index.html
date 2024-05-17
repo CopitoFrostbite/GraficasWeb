@@ -8,8 +8,7 @@
     <link rel="stylesheet" href="../assets/css/styles.css">
 </head>
 <body>
-    <button type="button" id="btn-login">Iniciar sesión con Google</button>
-    <button type="button" id="btn-logout">Logout</button>
+   
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -23,6 +22,8 @@
             getDatabase,
             ref,
             set,
+            push,
+            onValue,
         } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
         const firebaseConfig = {
@@ -44,25 +45,25 @@
 
         const buttonLogin = document.getElementById("btn-login");
         const buttonLogout = document.getElementById("btn-logout");
+        const buttonCreateRoom = document.getElementById("btn-create-room");
+        const roomListDiv = document.getElementById("room-list");
 
         buttonLogin.addEventListener("click", async function () {
             try {
                 const result = await signInWithPopup(auth, provider);
                 const user = result.user;
                 currentUser = user;
-                await set(ref(db, 'users/' + user.uid), {
-                    uid: user.uid,
-                    displayName: user.displayName,
-                    email: user.email,
-                    players: {
-                        player1: { x: 0, y: 0, z: 0 },
-                        player2: { x: 0, y: 0, z: 0 },
-                        player3: { x: 0, y: 0, z: 0 },
-                        player4: { x: 0, y: 0, z: 0 }
-                    }
+
+                await set(ref(db, 'users/' + currentUser.uid), {
+                    uid: currentUser.uid,
+                    displayName: currentUser.displayName,
+                    email: currentUser.email
                 });
+
                 console.log("User logged in: ", user);
-                window.location.href = 'juego.html';
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                loadRooms();
+                //window.location.href = 'juego.html';
             } catch (error) {
                 console.error('Error en el inicio de sesión:', error);
             }
@@ -72,13 +73,75 @@
             try {
                 await signOut(auth);
                 console.log("Sign-out successful");
+                localStorage.removeItem('currentUser');
             } catch (error) {
                 console.error("An error happened during sign-out:", error);
             }
         });
+
+        buttonCreateRoom.addEventListener("click", async function () {
+            try {
+                const newRoomRef = push(ref(db, 'rooms'));
+                const roomId = newRoomRef.key;
+
+                await set(newRoomRef, {
+                    roomId: roomId,
+                    players: {}
+                });
+
+                joinRoom(roomId);
+            } catch (error) {
+                console.error("Error creating room:", error);
+            }
+        });
+
+        function loadRooms() {
+            onValue(ref(db, 'rooms'), (snapshot) => {
+                const rooms = snapshot.val();
+                roomListDiv.innerHTML = '';
+                for (const roomId in rooms) {
+                    const roomDiv = document.createElement('div');
+                    roomDiv.textContent = `Room ID: ${roomId}`;
+                    roomDiv.addEventListener('click', () => joinRoom(roomId));
+                    roomListDiv.appendChild(roomDiv);
+                }
+            });
+        }
+
+        async function joinRoom(roomId) {
+            const characterName = "Character1"; // Este valor puede ser dinámico según la selección del jugador
+            const initialPosition = { x: 0, y: 0, z: 0 };
+            const initialVelocity = { x: 0, y: 0, z: 0 };
+            const initialHitbox = { min: { x: -0.5, y: -0.5, z: -0.5 }, max: { x: 0.5, y: 0.5, z: 0.5 } };
+            const initialTackleHitbox = { min: { x: -0.5, y: -0.5, z: -0.5 }, max: { x: 0.5, y: 0.5, z: 0.5 } };
+
+            await set(ref(db, `rooms/${roomId}/players/${currentUser.uid}`), {
+                uid: currentUser.uid,
+                characterName: characterName,
+                position: initialPosition,
+                velocity: initialVelocity,
+                tackleState: "idle",
+                hitbox: initialHitbox,
+                tackleHitbox: initialTackleHitbox
+            });
+
+            localStorage.setItem('roomId', roomId);
+            window.location.href = 'juego.html';
+        }
+
+        if (localStorage.getItem('currentUser')) {
+            currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            loadRooms();
+        }
     </script>
 
     <img src="../assets/pictures/logo1.jpg" alt="PawPush Paradise Logo" class="logo">
+    <div class="button-container">
+      <button type="button" id="btn-login">Iniciar sesión con Google</button>
+      <button type="button" id="btn-logout">Logout</button>
+      <button type="button" id="btn-create-room">Crear Sala</button>
+  </div>
+  
     <div id="main-menu" class="panel">
         <ul>
             <li><a href="../views/juego.html" id="play">Jugar</a></li>
@@ -87,5 +150,6 @@
         </ul>
         <img src="../assets/pictures/art2.png" alt="PawPush Paradise Art" class="art">
     </div>
+    <div id="room-list"></div>
 </body>
 </html>

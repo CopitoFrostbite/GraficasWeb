@@ -55,7 +55,56 @@ body {
     background-color: #87CEEB; 
 }
 
+.button-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+}
 
+.button-container button {
+    background-color: var(--light-blue);
+    color: white;
+    padding: 15px 30px;
+    border-radius: 40px;
+    font-size: 20px;
+    border: none;
+    cursor: pointer;
+    margin: 10px 0;
+    transition: background-color 0.3s;
+    width: 240px; /* Ancho del botón */
+}
+
+.button-container button:hover {
+    background-color: #87CEEB;
+}
+
+#room-list {
+    width: 350px;
+    margin: 20px; 
+    text-align: center;
+    background-color: rgba(253, 188, 180, 0.8); 
+    padding: 20px;
+    border-radius: 20px;
+    position: absolute;
+    top: 100px;
+    left: 20px;
+}
+
+#room-list div {
+    background-color: var(--light-blue);
+    color: white;
+    padding: 15px;
+    border-radius: 20px;
+    font-size: 20px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#room-list div:hover {
+    background-color: #87CEEB;
+}
 
 #score1 {
     text-align: center;
@@ -82,7 +131,6 @@ body {
 #main-menu a:hover {
     background-color: #87CEEB; 
 }
-
 
 .art {
     display: block;
@@ -199,8 +247,6 @@ body {
     margin-bottom: 10px; /* Espaciado inferior */
 }
 
-
-
 #back.return-button {
     background-color: #ADD8E6;
 }
@@ -255,9 +301,6 @@ th {
 .score-table th {
     background-color: #f2f2f2;
 }
-
-
-
 
 /* Colores específicos de la paleta */
 :root {
