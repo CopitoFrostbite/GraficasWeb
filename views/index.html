@@ -8,7 +8,24 @@
     <link rel="stylesheet" href="../assets/css/styles.css">
 </head>
 <body>
-   
+    <img src="../assets/pictures/logo1.jpg" alt="PawPush Paradise Logo" class="logo">
+
+    <div class="button-container">
+        <button type="button" id="btn-login">Iniciar sesión con Google</button>
+        <button type="button" id="btn-logout">Logout</button>
+        <button type="button" id="btn-create-room">Crear Sala</button>
+    </div>
+
+    <div id="room-list" aria-label="Lista de Salas"></div>
+
+    <div id="main-menu" class="panel">
+        <ul>
+            <li><a href="../views/juego.html" id="play">Jugar</a></li>
+            <li><a href="../views/config.html" id="options">Opciones</a></li>
+            <li><a href="../views/score.html" id="score">Puntaje</a></li>
+        </ul>
+        <img src="../assets/pictures/art2.png" alt="PawPush Paradise Art" class="art">
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -110,7 +127,7 @@
 
         async function joinRoom(roomId) {
             const characterName = "Character1"; // Este valor puede ser dinámico según la selección del jugador
-            const initialPosition = { x: 0, y: 0, z: 0 };
+            const initialPosition = { x: 0, y: 8, z: 0 };
             const initialVelocity = { x: 0, y: 0, z: 0 };
             const initialHitbox = { min: { x: -0.5, y: -0.5, z: -0.5 }, max: { x: 0.5, y: 0.5, z: 0.5 } };
             const initialTackleHitbox = { min: { x: -0.5, y: -0.5, z: -0.5 }, max: { x: 0.5, y: 0.5, z: 0.5 } };
@@ -119,6 +136,7 @@
                 uid: currentUser.uid,
                 characterName: characterName,
                 position: initialPosition,
+                rotation: initialVelocity,
                 velocity: initialVelocity,
                 tackleState: "idle",
                 hitbox: initialHitbox,
@@ -126,7 +144,9 @@
             });
 
             localStorage.setItem('roomId', roomId);
-            window.location.href = 'juego.html';
+            console.log(localStorage.getItem('currentUser'));
+            console.log(localStorage.getItem('roomId'));
+            //window.location.href = 'juego.html';
         }
 
         if (localStorage.getItem('currentUser')) {
@@ -134,22 +154,5 @@
             loadRooms();
         }
     </script>
-
-    <img src="../assets/pictures/logo1.jpg" alt="PawPush Paradise Logo" class="logo">
-    <div class="button-container">
-      <button type="button" id="btn-login">Iniciar sesión con Google</button>
-      <button type="button" id="btn-logout">Logout</button>
-      <button type="button" id="btn-create-room">Crear Sala</button>
-  </div>
-  
-    <div id="main-menu" class="panel">
-        <ul>
-            <li><a href="../views/juego.html" id="play">Jugar</a></li>
-            <li><a href="../views/config.html" id="options">Opciones</a></li>
-            <li><a href="../views/score.html" id="score">Puntaje</a></li>
-        </ul>
-        <img src="../assets/pictures/art2.png" alt="PawPush Paradise Art" class="art">
-    </div>
-    <div id="room-list"></div>
 </body>
 </html>

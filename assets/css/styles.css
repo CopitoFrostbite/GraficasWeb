@@ -14,47 +14,6 @@ body {
     border-radius: 50%; 
 }
 
-#main-menu {
-    width: 350px;
-    margin: 120px auto; 
-    text-align: center;
-    background-color: rgba(253, 188, 180, 0.8); 
-    padding: 40px;
-    border-radius: 20px;
-    position: relative;
-}
-
-#main-menu h1 {
-    color: white;
-    font-size: 36px;
-    margin-bottom: 20px;
-}
-
-#main-menu ul {
-    list-style: none;
-    padding: 0;
-}
-
-#main-menu li {
-    margin-bottom: 20px;
-}
-
-#main-menu a {
-    text-decoration: none;
-    color: white; 
-    background-color: #ADD8E6; 
-    padding: 15px 30px; 
-    border-radius: 40px;
-    display: inline-block;
-    transition: background-color 0.3s;
-    width: 240px; 
-    font-size: 30px;
-}
-
-#main-menu a:hover {
-    background-color: #87CEEB; 
-}
-
 .button-container {
     display: flex;
     flex-direction: column;
@@ -104,6 +63,47 @@ body {
 
 #room-list div:hover {
     background-color: #87CEEB;
+}
+
+#main-menu {
+    width: 350px;
+    margin: 120px auto; 
+    text-align: center;
+    background-color: rgba(253, 188, 180, 0.8); 
+    padding: 40px;
+    border-radius: 20px;
+    position: relative;
+}
+
+#main-menu h1 {
+    color: white;
+    font-size: 36px;
+    margin-bottom: 20px;
+}
+
+#main-menu ul {
+    list-style: none;
+    padding: 0;
+}
+
+#main-menu li {
+    margin-bottom: 20px;
+}
+
+#main-menu a {
+    text-decoration: none;
+    color: white; 
+    background-color: #ADD8E6; 
+    padding: 15px 30px; 
+    border-radius: 40px;
+    display: inline-block;
+    transition: background-color 0.3s;
+    width: 240px; 
+    font-size: 30px;
+}
+
+#main-menu a:hover {
+    background-color: #87CEEB; 
 }
 
 #score1 {

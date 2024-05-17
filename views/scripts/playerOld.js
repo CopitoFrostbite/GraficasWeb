@@ -1,10 +1,6 @@
 import * as THREE from '../three.module.js';
 import { updatePhysics } from './physics.js';
 import Animations from './animations.js';
-import {
-    ref,
-    set
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const TACKLE_STATE = {
     IDLE: 'idle',
@@ -14,7 +10,7 @@ const TACKLE_STATE = {
 };
 
 class Player {
-    constructor(id, gltf, characterName, controls, scene, terrainMesh, databaseRef, roomId) {
+    constructor(id, gltf, characterName, controls, scene, terrainMesh) {
         this.id = id;
         this.characterName = characterName;
         this.mesh = gltf.scene;
@@ -22,8 +18,6 @@ class Player {
         this.controls = controls;
         this.scene = scene;
         this.terrainMesh = terrainMesh;
-        this.databaseRef = databaseRef; // Referencia a la base de datos de Firebase
-        this.roomId = roomId; // ID de la sala
         this.velocity = new THREE.Vector3();
         this.friction = 0.98;
         this.jumpForce = 15;
@@ -80,12 +74,12 @@ class Player {
 
         this.animations.update(deltaTime);
 
-        // Enviar la posición y estado actualizados a Firebase
-        this.updateDatabase();
+        const currentPosition = this.mesh.position.clone();
+        this.mesh.position.copy(currentPosition);
     }
 
     handleInput(deltaTime) {
-        const movement = this.controls ? this.controls.getMovement() : {};
+        const movement = this.controls.getMovement();
         const acceleration = 20.0;
         let moveDirection = new THREE.Vector3();
 
@@ -135,7 +129,7 @@ class Player {
         }
 
         // Verificar si el jugador está tacleando
-        if (this.controls && this.controls.isTackling() && this.tackleState === TACKLE_STATE.IDLE) {
+        if (this.controls.isTackling() && this.tackleState === TACKLE_STATE.IDLE) {
             this.tackleState = TACKLE_STATE.STARTUP;
             this.tackleCounter = 0;
         }
@@ -187,53 +181,6 @@ class Player {
 
     push(force) {
         this.velocity.add(force);
-    }
-
-    updateDatabase() {
-        set(ref(this.databaseRef, `rooms/${this.roomId}/players/${this.id}`), {
-            uid: this.id,
-            characterName: this.characterName,
-            position: {
-                x: this.mesh.position.x,
-                y: this.mesh.position.y,
-                z: this.mesh.position.z
-            },
-            rotation: {
-                x: this.mesh.rotation.x,
-                y: this.mesh.rotation.y,
-                z: this.mesh.rotation.z
-            },
-            velocity: {
-                x: this.velocity.x,
-                y: this.velocity.y,
-                z: this.velocity.z
-            },
-            tackleState: this.tackleState,
-            hitbox: {
-                min: {
-                    x: this.hitbox.min.x,
-                    y: this.hitbox.min.y,
-                    z: this.hitbox.min.z
-                },
-                max: {
-                    x: this.hitbox.max.x,
-                    y: this.hitbox.max.y,
-                    z: this.hitbox.max.z
-                }
-            },
-            tackleHitbox: {
-                min: {
-                    x: this.tackleHitbox.min.x,
-                    y: this.tackleHitbox.min.y,
-                    z: this.tackleHitbox.min.z
-                },
-                max: {
-                    x: this.tackleHitbox.max.x,
-                    y: this.tackleHitbox.max.y,
-                    z: this.tackleHitbox.max.z
-                }
-            }
-        });
     }
 }
 

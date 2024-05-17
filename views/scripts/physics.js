@@ -1,15 +1,13 @@
 import * as THREE from '../three.module.js';
 
 function updatePhysics(player, deltaTime, terrainMesh) {
-   
-    
     const raycaster = new THREE.Raycaster(player.mesh.position.clone().add(new THREE.Vector3(0, 1.0, 0)), new THREE.Vector3(0, -1, 0));
     const intersects = raycaster.intersectObject(terrainMesh);
     const groundThreshold = 0.05;
 
     if (intersects.length > 0) {
         const closest = intersects[0];
-        const distanceToGround = closest.distance - 1.0; //  origen en el centro del jugador
+        const distanceToGround = closest.distance - 1.0; // origen en el centro del jugador
 
         if (distanceToGround <= groundThreshold) {
             player.mesh.position.y -= distanceToGround; // Ajusta jugador al suelo
@@ -34,8 +32,6 @@ function updatePhysics(player, deltaTime, terrainMesh) {
         
         player.velocity.y += -9.81 * deltaTime;
     }
-
-    
 }
 
 function checkPlayerCollisions(players) {
@@ -58,22 +54,20 @@ function checkPlayerCollisions(players) {
                 player2.push(direction.clone().multiplyScalar(pushStrength));
             }
 
-           // Verificar tacleo
-           if (player1.tackleState === 'active' && player1.tackleHitbox.intersectsBox(player2.hitbox)) {
-            const direction = new THREE.Vector3().subVectors(player2.mesh.position, player1.mesh.position).normalize();
-            player2.push(direction.multiplyScalar(tacklePushStrength));
-            console.log(`Player ${player1.id} tacleó a Player ${player2.id}`);
-        }
+            // Verificar tacleo
+            if (player1.tackleState === 'active' && player1.tackleHitbox.intersectsBox(player2.hitbox)) {
+                const direction = new THREE.Vector3().subVectors(player2.mesh.position, player1.mesh.position).normalize();
+                player2.push(direction.multiplyScalar(tacklePushStrength));
+                console.log(`Player ${player1.id} tacleó a Player ${player2.id}`);
+            }
 
-        if (player2.tackleState === 'active' && player2.tackleHitbox.intersectsBox(player1.hitbox)) {
-            const direction = new THREE.Vector3().subVectors(player1.mesh.position, player2.mesh.position).normalize();
-            player1.push(direction.multiplyScalar(tacklePushStrength));
-            console.log(`Player ${player2.id} tacleó a Player ${player1.id}`);
-        }
+            if (player2.tackleState === 'active' && player2.tackleHitbox.intersectsBox(player1.hitbox)) {
+                const direction = new THREE.Vector3().subVectors(player1.mesh.position, player2.mesh.position).normalize();
+                player1.push(direction.multiplyScalar(tacklePushStrength));
+                console.log(`Player ${player2.id} tacleó a Player ${player1.id}`);
+            }
         }
     }
 }
-
-
 
 export { updatePhysics, checkPlayerCollisions };
