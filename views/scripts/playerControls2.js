@@ -4,6 +4,8 @@
         this.camera = camera;
         this.domElement = domElement;
         this.jump = false;
+        this.tackle = false;
+        
         // Escuchar eventos de teclado en todo el documento
         this.moveState = { forward: false, backward: false, left: false, right: false };
 
@@ -66,6 +68,14 @@
     // Una nueva función para obtener el estado de movimiento
     getMovement() {
         return this.moveState;
+    }
+
+    isRunning() {
+        return this.run;
+    }
+
+    isTackling() {
+        return this.tackle;
     }
 }
 export default PlayerControls2;

@@ -34,19 +34,46 @@ function updatePhysics(player, deltaTime, terrainMesh) {
         
         player.velocity.y += -9.81 * deltaTime;
     }
+
+    
 }
 
 function checkPlayerCollisions(players) {
+    const pushStrength = 5; // Ajusta la fuerza del empuje según sea necesario
+    const tacklePushStrength = 10; // Fuerza de empuje para el tacleo
+
     for (let i = 0; i < players.length - 1; i++) {
         for (let j = i + 1; j < players.length; j++) {
-            if (players[i].hitbox.intersectsBox(players[j].hitbox)) {
-                // Manejar colisión entre players[i] y players[j]
-                console.log(`Player ${players[i].id} ha colisionado con Player ${players[j].id}`);
-                // Aquí falta aplicar la lógica  como resultado de la colisión
+            const player1 = players[i];
+            const player2 = players[j];
+
+            if (player1.hitbox.intersectsBox(player2.hitbox)) {
+                console.log(`Player ${player1.id} ha colisionado con Player ${player2.id}`);
+
+                // Calcula la dirección del empuje
+                const direction = new THREE.Vector3().subVectors(player2.mesh.position, player1.mesh.position).normalize();
+
+                // Aplica la fuerza de empuje a ambos jugadores
+                player1.push(direction.clone().multiplyScalar(-pushStrength));
+                player2.push(direction.clone().multiplyScalar(pushStrength));
             }
+
+           // Verificar tacleo
+           if (player1.tackleState === 'active' && player1.tackleHitbox.intersectsBox(player2.hitbox)) {
+            const direction = new THREE.Vector3().subVectors(player2.mesh.position, player1.mesh.position).normalize();
+            player2.push(direction.multiplyScalar(tacklePushStrength));
+            console.log(`Player ${player1.id} tacleó a Player ${player2.id}`);
+        }
+
+        if (player2.tackleState === 'active' && player2.tackleHitbox.intersectsBox(player1.hitbox)) {
+            const direction = new THREE.Vector3().subVectors(player1.mesh.position, player2.mesh.position).normalize();
+            player1.push(direction.multiplyScalar(tacklePushStrength));
+            console.log(`Player ${player2.id} tacleó a Player ${player1.id}`);
+        }
         }
     }
 }
+
 
 
 export { updatePhysics, checkPlayerCollisions };

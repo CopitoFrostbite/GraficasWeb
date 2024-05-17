@@ -14,6 +14,7 @@
   import * as THREE from './three.module.js';
   import { OrbitControls } from './OrbitControls.js';
   import { GLTFLoader } from './GLTFLoader.js';
+  import { STLLoader } from "./STLLoader.js";
   import Player from './scripts/player.js';
   import PlayerControls from './scripts/playerControls.js';
   import PlayerControls2 from './scripts/playerControls2.js';
@@ -73,8 +74,33 @@
       new THREE.Vector3(0, 0.5, 20),
       
     ];
-    
 
+    /*  // Read
+     const starCountRef = ref(db, "jugadores");
+      onValue(starCountRef, (snapshot) => {
+        const data = snapshot.val();
+
+        Object.entries(data).forEach(([key, value]) => {
+          console.log(`${key} ${value.x} ${value.z}`); // "a 5", "b 7", "c 9"
+          const jugador = scene.getObjectByName(key);
+
+          // Si no existe el jugador lo agregamos a la escena
+          if (!jugador) {
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            const material = new THREE.MeshPhongMaterial();
+            const cube = new THREE.Mesh(geometry, material);
+            cube.position.set(value.x, 0, value.z);
+            cube.material.color = new THREE.Color(Math.random() * 0xffffff);
+            cube.name = key;
+            scene.add(cube);
+          } else {
+            scene.getObjectByName(key).position.x = value.x;
+            scene.getObjectByName(key).position.z = value.z;
+          }
+        });
+      }); */
+    
+    
     posicionesPinos.forEach(pos => cargarModeloEnPosicion('./modelos/pino.glb', pos, new THREE.Vector3(0.8, 0.8, 0.8)));
 
     // Cargar objetos animados 
@@ -87,8 +113,8 @@
   
   async function initPlayer(terrainMesh) {
     //const playerGeometry = new THREE.BoxGeometry(1, 1, 1); 
-    const playerModelData = await cargarModelo('./modelos/StaticZorro.glb');
-    const playerModelData2 = await cargarModelo('./modelos/StaticConejo.glb');
+    const playerModelData = await cargarModelo('./modelos/StaticZorroR.glb');
+    const playerModelData2 = await cargarModelo('./modelos/StaticConejoR.glb');
     //const playerMaterial = new THREE.MeshBasicMaterial({ color: 0xFF5733 });
     //const playerMaterial2 = new THREE.MeshBasicMaterial({ color: 0xAA5733 });
     
@@ -100,8 +126,10 @@
     //playerMesh2.position.set(2, 2, 0);
     playerModelData.scene.position.set(0, 4, 0);
     playerModelData.scene.scale.set(0.8, 0.8, 0.8)
+    playerModelData.scene.rotateY(Math.PI / 2);
     playerModelData2.scene.position.set(2, 4, 0);
     playerModelData2.scene.scale.set(0.8, 0.8, 0.8);
+    playerModelData2.scene.rotateY(Math.PI / 2);
 
     
     renderer.domElement.tabIndex = '0';
@@ -115,8 +143,18 @@
     
     player = new Player(1,playerModelData,"Zorro", playerControls, scene, terrainMesh);
     player2 = new Player(2,playerModelData2,"Conejo", playerControls2, scene, terrainMesh);
-    await cargarAnimaciones('./modelos/AnimacionZorroRun.glb', player.mixer);
-    await cargarAnimaciones('./modelos/AnimacionConejoRun.glb', player2.mixer);
+    await cargarAnimaciones('./modelos/AnimacionZorroRun.glb', player.animations.mixer);
+    await cargarAnimaciones('./modelos/AnimacionConejoRun.glb', player2.animations.mixer);
+
+    player.animationsMap = {
+    'Run': 'Armature|mixamo.com|Layer0',
+    
+  };
+  
+  player2.animationsMap = {
+    'Run': 'Armature|mixamo.com|Layer0',
+    
+  };
 
     scene.add(playerModelData.scene);
     scene.add(playerModelData2.scene);
@@ -130,11 +168,16 @@
   try {
     const gltf = await loaderGLTF.loadAsync(url);
     gltf.animations.forEach((clip) => {
+     
+      const action = mixer.clipAction(clip);
       
-      mixer.clipAction(clip); 
       
-      mixer._actions[0]._clip.name = "Run";
+      action.setLoop(THREE.LoopRepeat);
+
       
+      action.paused = true;
+
+      console.log(`Animación preparada: ${clip.name}`); // Confirma que la animación está lista para ser reproducida
     });
   } catch (error) {
     console.error('Hubo un problema al cargar el archivo GLB:', error);
@@ -191,7 +234,7 @@
     mixers.forEach(mixer => mixer.update(deltaTime));
     if (player) {
         player.update(deltaTime); 
-        players.push(player); // Agregamos al jugador al array para la detección de colisión posterior
+        players.push(player); 
     }
     if (player2) {
         player2.update(deltaTime); 
