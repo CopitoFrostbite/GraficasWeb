@@ -10,6 +10,12 @@
         }
       </style>
 </head>
+
+
+
+
+
+
 <body>
 
     <script type="module">
@@ -18,14 +24,27 @@
       import { STLLoader } from "./STLLoader.js";
       import { GLTFLoader } from "./GLTFLoader.js";
 
+      let clock = new THREE.Clock(); //tiempo
+      let delta = 0;
+
       const scene = new THREE.Scene();
+
+      scene.fog = new THREE.Fog(0xc0f0ff, 0.1, 1000); //niebla
+
+
       const loader = new THREE.TextureLoader();
+
+      
+
       loader.load("./fondo3.jpg", function (texture) {
         scene.background = texture;
       });
 
       const camera = new THREE.PerspectiveCamera(60,window.innerWidth / window.innerHeight);
       camera.position.set(0, 50, 0);
+
+      let target = new THREE.Vector3(0,2,0);
+      camera.lookAt(target);
 
       const hemisphereLight = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
       scene.add(hemisphereLight);
@@ -35,6 +54,38 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
       const cameraControl = new OrbitControls(camera, renderer.domElement);
+
+      //textura niebla
+      const smokeTexture = new THREE.TextureLoader().load("./modelos/niebla2.png");
+        smokeTexture.encoding = THREE.sRGBEncoding;
+        const smokeGeometry = new THREE.PlaneGeometry(700, 50);
+
+        const smokeMaterial = new THREE.MeshLambertMaterial({
+            map: smokeTexture,
+            emissive: 5E0000,
+            opacity: 0.25,
+            transparent: true
+        });
+
+        let smokeParticles = [];
+
+        // Corrección en el bucle for
+        for (let i = 0; i < 40; i++) {
+            let smokeElement = new THREE.Mesh(smokeGeometry, smokeMaterial);
+            smokeElement.scale.set(1,1,1,);
+
+            // Corrección en el uso de Math.random()
+            smokeElement.position.set(Math.random() * 200 - 0, 10, Math.random() * 100 - 50);
+            
+            smokeElement.rotation.z = Math.random() * 360;
+
+            scene.add(smokeElement);
+            smokeParticles.push(smokeElement);
+        }
+
+        window.addEventListener('resize', onWindowResize);
+
+
 
 
       const loaderGLTF = new GLTFLoader();
@@ -73,6 +124,17 @@ cargarModeloEnPosicion(new THREE.Vector3(0, 2, -20));
 cargarModeloEnPosicion(new THREE.Vector3(0, 1, 20)); 
 
 */
+
+loaderGLTF.load(
+        "./modelos/volcano.glb",
+        function (model) {
+          const obj = model.scene;
+          obj.scale.set(10, 10, 10);
+          obj.position.set(27, -7, 19);
+         // obj.rotateX(Math.PI / 2);
+          scene.add(obj);
+        }
+      );
 
 
 //tigre
@@ -151,6 +213,7 @@ cargarModeloConAnimacion(new THREE.Vector3(13, -5, 15));
 
 
 
+
 // Función para cargar modelo de roca en una posición específica y hacer que caiga después de un retraso
 function cargarModeloEnPosicionYCaerConRetraso(posicion, retraso) {
     loaderGLTF.load(
@@ -161,6 +224,8 @@ function cargarModeloEnPosicionYCaerConRetraso(posicion, retraso) {
             obj.scale.set(3, 3, 3);
             scene.add(obj);
 
+            
+
             // Temporizador para iniciar la caída después de un retraso
             setTimeout(() => {
                 iniciarCaída(obj);
@@ -168,7 +233,7 @@ function cargarModeloEnPosicionYCaerConRetraso(posicion, retraso) {
 
             // Función para iniciar la caída de la roca
             function iniciarCaída(roca) {
-                const velocidadDeCaída = 0.8; // Ajusta la velocidad de caída según sea necesario
+                const velocidadDeCaída = 0.7; // Ajusta la velocidad de caída según sea necesario
                 animate();
 
                 function animate() {
@@ -176,6 +241,7 @@ function cargarModeloEnPosicionYCaerConRetraso(posicion, retraso) {
 
                     // Verificar si la roca ha llegado al suelo
                     if (roca.position.y <= -7) {
+                 
                         // Detener la animación
                         return;
                     }
@@ -188,11 +254,11 @@ function cargarModeloEnPosicionYCaerConRetraso(posicion, retraso) {
 }
 
 // Llamadas a la función para cargar y hacer caer los modelos de rocas con retraso
-cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(-17, 50, 0), 5000); // 5 segundos de retraso
-cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(3, 50, -17), 7000); // 7 segundos de retraso
-cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(20, 50, 4), 10000);
-cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(-7, 50, 20),15000); // 7 segundos de retraso
-cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(10, 50, 4), 17000); // 10 segundos de retraso
+cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(-17, 50, 0), 100); // 5 segundos de retraso
+cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(3, 50, -17), 1000); // 7 segundos de retraso
+cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(20, 50, 4), 3000);
+cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(-7, 50, 20),5000); // 7 segundos de retraso
+cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(10, 50, 4), 7000); // 10 segundos de retraso
 // Agrega más llamadas para cargar más rocas con diferentes retrasos si es necesario
 
 
@@ -238,13 +304,43 @@ cargarModeloEnPosicionYCaer(new THREE.Vector3(10, 50, 4));
 // Agrega más llamadas para cargar más rocas si es necesario
 
 */
-      
+animate();
 function animate() {
         requestAnimationFrame(animate);
+
+        delta = clock.getDelta();
+
+// Animar las partículas de niebla
+for (let i = 0; i < smokeParticles.length; i++) {
+    smokeParticles[i].rotation.z += (delta * 0.12);
+}
         renderer.render(scene, camera);
       }
-      animate();
 
+
+
+
+
+
+      
+      const listener = new THREE.AudioListener();
+camera.add( listener );
+const sound = new THREE.Audio( listener );
+const audioLoader = new THREE.AudioLoader();
+
+audioLoader.load( './3ernivelost.mp3', function( buffer ) {
+	sound.setBuffer( buffer );
+	sound.setLoop( true );
+	sound.setVolume( 0.1 );
+	sound.play();
+});
+
+
+function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
 
     </script>
     

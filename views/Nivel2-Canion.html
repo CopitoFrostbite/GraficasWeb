@@ -30,14 +30,17 @@
       const hemisphereLight = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
       scene.add(hemisphereLight);
 
-      
       const renderer = new THREE.WebGLRenderer();
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
       const cameraControl = new OrbitControls(camera, renderer.domElement);
 
-
       const loaderGLTF = new GLTFLoader();
+
+      
+
+
+
       //desierto
       loaderGLTF.load(
         "./modelos/terreno2.glb",
@@ -48,6 +51,13 @@
           scene.add(obj);
         }
       );
+
+
+
+      
+
+      
+
 
 //roca grande
       loaderGLTF.load(
@@ -136,6 +146,8 @@ function cargarModeloConAnimacion(posicion) {
             obj.scale.set(0.8, 0.5, 0.8);
             scene.add(obj); 
 
+
+            
             // Guardar el objeto en una variable para acceder a él en la función de animación
             const rayoModel = obj;
 
@@ -169,6 +181,33 @@ function animate() {
         renderer.render(scene, camera);
       }
       animate();
+
+
+
+
+
+
+      const listener = new THREE.AudioListener();
+camera.add( listener );
+const sound = new THREE.Audio( listener );
+const audioLoader = new THREE.AudioLoader();
+
+audioLoader.load( './Music_desierto.mp3', function( buffer ) {
+	sound.setBuffer( buffer );
+	sound.setLoop( true );
+	sound.setVolume( 0.1 );
+	sound.play();
+});
+
+
+
+
+
+
+
+
+
+
 
 
     </script>

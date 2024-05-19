@@ -10,22 +10,26 @@
 <body>
     <img src="../assets/pictures/logo1.jpg" alt="PawPush Paradise Logo" class="logo">
 
+    <div id="main-menu" class="panel">
+        <ul>
+            <li><a href="../views/juego.html" id="play">Jugar</a></li>
+            <li><button type="button" id="btn-create-room">Crear Sala</button></li>
+            <li><a href="../views/config.html" id="options">Opciones</a></li>
+            <li><a href="../views/score.html" id="score">Puntaje</a></li>
+            <li><button type="button" id="btn-login">Iniciar sesión con Google</button></li>
+            <li><button type="button" id="btn-logout">Logout</button></li>
+           
+        </ul>
+        <img src="../assets/pictures/art2.png" alt="PawPush Paradise Art" class="art">
+    </div>
+
     <div class="button-container">
-        <button type="button" id="btn-login">Iniciar sesión con Google</button>
-        <button type="button" id="btn-logout">Logout</button>
-        <button type="button" id="btn-create-room">Crear Sala</button>
+      
     </div>
 
     <div id="room-list" aria-label="Lista de Salas"></div>
 
-    <div id="main-menu" class="panel">
-        <ul>
-            <li><a href="../views/juego.html" id="play">Jugar</a></li>
-            <li><a href="../views/config.html" id="options">Opciones</a></li>
-            <li><a href="../views/score.html" id="score">Puntaje</a></li>
-        </ul>
-        <img src="../assets/pictures/art2.png" alt="PawPush Paradise Art" class="art">
-    </div>
+  
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";

@@ -14,27 +14,37 @@ body {
     border-radius: 50%; 
 }
 
-.button-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-top: 20px;
-}
 
-.button-container button {
+
+.panel button {
     background-color: var(--light-blue);
     color: white;
     padding: 15px 30px;
     border-radius: 40px;
-    font-size: 20px;
+    font-size: 30px;
     border: none;
     cursor: pointer;
     margin: 10px 0;
     transition: background-color 0.3s;
     width: 240px; /* Ancho del botón */
+  
 }
 
-.button-container button:hover {
+.panel h1 {
+    color: white;
+    font-size: 36px;
+    margin-bottom: 20px;
+}
+.panel ul {
+    list-style: none;
+    padding: 0;
+}
+
+.panel li {
+    margin-bottom: 20px;
+}
+
+.panel button:hover {
     background-color: #87CEEB;
 }
 
@@ -94,7 +104,7 @@ body {
     text-decoration: none;
     color: white; 
     background-color: #ADD8E6; 
-    padding: 15px 30px; 
+    padding: 15px 20px; 
     border-radius: 40px;
     display: inline-block;
     transition: background-color 0.3s;
