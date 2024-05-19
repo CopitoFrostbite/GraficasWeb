@@ -4,11 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nivel Hielo</title>
+    <link rel="stylesheet" href="../assets/css/pausa.css">
     <style>
-        body { margin: 0; }
-    </style>
+      body { margin: 0; }
+      /* Estilos para el modal */
+      
+  </style>
 </head>
 <body>
+
+  <div id="pauseModal" class="modal">
+    <div class="modal-content">
+        <img src="../assets/pictures/logo1.jpg" alt="PawPush Paradise Logo" class="logo">
+        <h1>Pausa</h1>
+        <ul>
+            <li><a href="../views/juego.html" id="resumen">Resumen</a></li>
+            <li><a href="../views/config.html" id="opciones">Opciones</a></li>
+            <li><a href="../views/index.html" id="salir">Menu Principal</a></li>
+        </ul>
+    </div>
+</div>
 
 <script type="module">
   import * as THREE from './three.module.js';
@@ -104,23 +119,33 @@
 
     // Leer todos los jugadores en la sala
     onValue(ref(db, `rooms/${roomId}/players`), (snapshot) => {
-      const playersData = snapshot.val();
-      //console.log('Players Data: ', playersData); // Ver los datos recibidos
-      for (const playerId in playersData) {
-        if (playersData.hasOwnProperty(playerId)) {
-          if (!players[playerId]) {
-            // Añadir nuevo jugador a la escena
-            addPlayerToScene(playerId, playersData[playerId], terrainMesh);
-          } else {
-            // Actualizar jugador existente
-            updatePlayerFromDatabase(playerId, playersData[playerId]);
-          }
+        const playersData = snapshot.val();
+        for (const playerId in playersData) {
+            if (playersData.hasOwnProperty(playerId)) {
+                if (!players[playerId]) {
+                    // Añadir nuevo jugador a la escena
+                    addPlayerToScene(playerId, playersData[playerId], terrainMesh);
+                } else {
+                    // Actualizar jugador existente
+                    updatePlayerFromDatabase(playerId, playersData[playerId]);
+                }
+            }
         }
-      }
     });
 
-    requestAnimationFrame(animate);
+    if (localStorage.getItem('isHost') === 'true') {
+        console.log("Soy el host, iniciar lógica de host...");
+        // Código específico para el host
+        requestAnimationFrame(animateHost);
+    } else {
+        console.log("Soy un cliente, iniciar lógica de cliente...");
+        // Código específico para el cliente
+        requestAnimationFrame(animateClient);
+    }
+
   }
+
+
 
   console.log(localStorage.getItem('currentUser'));
   console.log(localStorage.getItem('roomId'));
@@ -139,7 +164,8 @@
     renderer.domElement.focus();
 
     const playerControls = new PlayerControls(camera, renderer.domElement);
-    const newPlayer = new Player(currentUser.uid, playerModelData, "Zorro", playerControls, scene, terrainMesh, db, roomId);
+    const isHost = localStorage.getItem('isHost') === 'true';
+    const newPlayer = new Player(currentUser.uid, playerModelData, "Zorro", playerControls, scene, terrainMesh, db, roomId, isHost);
 
     await cargarAnimaciones('./modelos/AnimacionZorroRun.glb', newPlayer.animations.mixer);
 
@@ -209,6 +235,7 @@
     playerModelData.scene.rotation.set(playerData.rotation.x, playerData.rotation.y, playerData.rotation.z);
     playerModelData.scene.scale.set(0.8, 0.8, 0.8);
 
+    const isHost = localStorage.getItem('isHost') === 'true';
     const newPlayer = new Player(playerId, playerModelData, "Conejo", null, scene, terrainMesh, db, roomId);
     newPlayer.mesh.position.set(playerData.position.x, playerData.position.y, playerData.position.z);
     newPlayer.mesh.rotation.set(playerData.rotation.x, playerData.rotation.y, playerData.rotation.z);
@@ -237,59 +264,65 @@
     player.tackleHitbox.set(new THREE.Vector3(playerData.tackleHitbox.min.x, playerData.tackleHitbox.min.y, playerData.tackleHitbox.min.z), new THREE.Vector3(playerData.tackleHitbox.max.x, playerData.tackleHitbox.max.y, playerData.tackleHitbox.max.z));
   }
 
-  function updateDatabase() {
+  let lastDatabaseUpdate = Date.now();
+const databaseUpdateInterval = 1000;
+const now = Date.now();
+if (now - lastDatabaseUpdate >= databaseUpdateInterval) {  
+function updateDatabase() {
     for (const playerId in players) {
-      const player = players[playerId];
-      set(ref(db, `rooms/${roomId}/players/${playerId}`), {
-        uid: playerId,
-        characterName: player.characterName,
-        position: {
-          x: player.mesh.position.x,
-          y: player.mesh.position.y,
-          z: player.mesh.position.z
-        },
-        rotation: {
-          x: player.mesh.rotation.x,
-          y: player.mesh.rotation.y,
-          z: player.mesh.rotation.z
-        },
-        velocity: {
-          x: player.velocity.x,
-          y: player.velocity.y,
-          z: player.velocity.z
-        },
-        tackleState: player.tackleState,
-        hitbox: {
-          min: {
-            x: player.hitbox.min.x,
-            y: player.hitbox.min.y,
-            z: player.hitbox.min.z
-          },
-          max: {
-            x: player.hitbox.max.x,
-            y: player.hitbox.max.y,
-            z: player.hitbox.max.z
-          }
-        },
-        tackleHitbox: {
-          min: {
-            x: player.tackleHitbox.min.x,
-            y: player.tackleHitbox.min.y,
-            z: player.tackleHitbox.min.z
-          },
-          max: {
-            x: player.tackleHitbox.max.x,
-            y: player.tackleHitbox.max.y,
-            z: player.tackleHitbox.max.z
-          }
+        const player = players[playerId];
+        set(ref(db, `rooms/${roomId}/players/${playerId}`), {
+            uid: playerId,
+            characterName: player.characterName,
+            position: {
+                x: player.mesh.position.x,
+                y: player.mesh.position.y,
+                z: player.mesh.position.z
+            },
+            rotation: {
+                x: player.mesh.rotation.x,
+                y: player.mesh.rotation.y,
+                z: player.mesh.rotation.z
+            },
+            velocity: {
+                x: player.velocity.x,
+                y: player.velocity.y,
+                z: player.velocity.z
+            },
+            tackleState: player.tackleState,
+            hitbox: {
+                min: {
+                    x: player.hitbox.min.x,
+                    y: player.hitbox.min.y,
+                    z: player.hitbox.min.z
+                },
+                max: {
+                    x: player.hitbox.max.x,
+                    y: player.hitbox.max.x,
+                    z: player.hitbox.max.z
+                }
+            },
+            tackleHitbox: {
+                min: {
+                    x: player.tackleHitbox.min.x,
+                    y: player.tackleHitbox.min.y,
+                    z: player.tackleHitbox.min.z
+                },
+                max: {
+                    x: player.tackleHitbox.max.x,
+                    y: player.tackleHitbox.max.z
+                }
+            }
+        });
+       
         }
-      });
+        lastDatabaseUpdate = now;
     }
-  }
+}
 
   let lastFrameTime = Date.now();
 
-  function animate() {
+  /* function animate() {
     requestAnimationFrame(animate);
     const now = Date.now();
     const deltaTime = clock.getDelta();
@@ -313,9 +346,74 @@
       updateDatabase();
       lastFrameTime = now;
     }
-  }
+  } */
+
+  function animateHost() {
+    requestAnimationFrame(animateHost);
+    const deltaTime = clock.getDelta();
+
+    mixers.forEach(mixer => mixer.update(deltaTime));
+
+    for (const playerId in players) {
+        players[playerId].update(deltaTime);
+    }
+
+    checkPlayerCollisions(Object.values(players));
+
+    if (rayoModel) {
+        rayoModel.rotation.y += 0.01;
+    }
+
+    renderer.render(scene, camera);
+
+    updateDatabase(); // Only the host updates the database
+}
+
+function animateClient() {
+    requestAnimationFrame(animateClient);
+    const deltaTime = clock.getDelta();
+
+    mixers.forEach(mixer => mixer.update(deltaTime));
+
+    for (const playerId in players) {
+        players[playerId].update(deltaTime);
+    }
+
+    checkPlayerCollisions(Object.values(players));
+
+    if (rayoModel) {
+        rayoModel.rotation.y += 0.01;
+    }
+
+    renderer.render(scene, camera);
+}
+
 
   init();
+
+   // Pausar y reanudar el juego
+   let isPaused = false;
+  const pauseModal = document.getElementById('pauseModal');
+
+  function togglePause() {
+      if (isPaused) {
+          pauseModal.style.display = 'none';
+          // Aquí puedes reanudar la animación del juego
+          isPaused = false;
+          requestAnimationFrame(localStorage.getItem('isHost') === 'true' ? animateHost : animateClient);
+      } else {
+          pauseModal.style.display = 'flex';
+          // Aquí puedes pausar la animación del juego
+          isPaused = true;
+          cancelAnimationFrame(localStorage.getItem('isHost') === 'true' ? animateHost : animateClient);
+      }
+  }
+
+  document.addEventListener('keydown', function(event) {
+      if (event.key === 'p') {
+          togglePause();
+      }
+  });
 </script>
 
 </body>

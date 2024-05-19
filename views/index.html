@@ -5,6 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PawPush Paradise</title>
+    
     <link rel="stylesheet" href="../assets/css/styles.css">
 </head>
 <body>
@@ -103,6 +104,7 @@
 
                 await set(newRoomRef, {
                     roomId: roomId,
+                    host: currentUser.uid,
                     players: {}
                 });
 
@@ -144,6 +146,7 @@
             });
 
             localStorage.setItem('roomId', roomId);
+            localStorage.setItem('isHost', true);  // Guardar información de que este jugador es el host
             console.log(localStorage.getItem('currentUser'));
             console.log(localStorage.getItem('roomId'));
             //window.location.href = 'juego.html';

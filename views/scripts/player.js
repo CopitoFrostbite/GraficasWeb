@@ -14,7 +14,7 @@ const TACKLE_STATE = {
 };
 
 class Player {
-    constructor(id, gltf, characterName, controls, scene, terrainMesh, databaseRef, roomId) {
+    constructor(id, gltf, characterName, controls, scene, terrainMesh, databaseRef, roomId, isHost) {
         this.id = id;
         this.characterName = characterName;
         this.mesh = gltf.scene;
@@ -32,6 +32,7 @@ class Player {
         this.hitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
         this.hitbox.setFromObject(this.mesh);
         this.tackleHitbox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+        this.isHost = isHost;
 
         // Estados de tacleada
         this.tackleState = TACKLE_STATE.IDLE;
