@@ -79,7 +79,7 @@ class Player {
         this.animations.update(deltaTime);
 
         // Enviar la posición y estado actualizados a Firebase
-        this.saveToDatabase();
+         this.saveToDatabase();
     }
 
     handleInput(deltaTime) {
@@ -219,6 +219,7 @@ class Player {
                     z: this.hitbox.max.z
                 }
             },
+            isHost: this.isHost,
             tackleHitbox: {
                 min: {
                     x: this.tackleHitbox.min.x,

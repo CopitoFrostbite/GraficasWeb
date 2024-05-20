@@ -1,4 +1,6 @@
 import * as THREE from '../three.module.js';
+import { ref, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { db } from './firebaseConfig.js';
 
 function updatePhysics(player, deltaTime, terrainMesh) {
     const raycaster = new THREE.Raycaster(player.mesh.position.clone().add(new THREE.Vector3(0, 1.0, 0)), new THREE.Vector3(0, -1, 0));
@@ -45,6 +47,7 @@ function checkPlayerCollisions(players) {
 
            if (player1.hitbox.intersectsBox(player2.hitbox)) {
                 // Calcula la dirección del empuje
+                
                 const direction = new THREE.Vector3().subVectors(player2.mesh.position, player1.mesh.position).normalize();
 
                 // Aplica la fuerza de empuje a ambos jugadores
@@ -69,8 +72,28 @@ function checkPlayerCollisions(players) {
                 player1.push(direction.multiplyScalar(tacklePushStrength));
                 console.log(`Player ${player2.id} tacleó a Player ${player1.id}`);
             }
+
+            updatePlayerCollisionInDatabase(player1);
+            updatePlayerCollisionInDatabase(player2);
         }
     }
+    
+}
+
+function updatePlayerCollisionInDatabase(player) {
+    update(ref(db, `rooms/${player.roomId}/players/${player.id}`), {
+        position: player.mesh.position,
+        velocity: player.velocity,
+        tackleState: player.tackleState,
+        hitbox: {
+            min: player.hitbox.min,
+            max: player.hitbox.max,
+        },
+        tackleHitbox: {
+            min: player.tackleHitbox.min,
+            max: player.tackleHitbox.max,
+        }
+    });
 }
 
 export { updatePhysics, checkPlayerCollisions };

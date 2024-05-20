@@ -7,18 +7,43 @@
     <style>
         body {
           margin: 0;
+
+          #pausaButton {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 9999;
+
+            text-decoration: none;
+    color: white; 
+    background-color: #ADD8E6; 
+    padding: 5px 15px; 
+    border-radius: 40px;
+    display: inline-block;
+    transition: background-color 0.3s;
+    width: 100px; 
+    font-size: 10px;
+        }
         }
       </style>
 </head>
 <body>
-
+     <!-- Botón de pausa -->
+     <button id="pausaButton">Pausa</button>
     <script type="module">
         import * as THREE from "./three.module.js";
       import { OrbitControls } from "./OrbitControls.js";
       import { STLLoader } from "./STLLoader.js";
       import { GLTFLoader } from "./GLTFLoader.js";
 
+
       const scene = new THREE.Scene();
+
+        //luz ambiental
+      const light = new THREE.AmbientLight(0x9c662d, -0.1); // soft white light
+    scene.add(light);
+
+       
       const loader = new THREE.TextureLoader();
       loader.load("./fondo2.jpeg", function (texture) {
         scene.background = texture;
@@ -30,35 +55,13 @@
       const hemisphereLight = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
       scene.add(hemisphereLight);
 
-      
       const renderer = new THREE.WebGLRenderer();
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
       const cameraControl = new OrbitControls(camera, renderer.domElement);
 
-
       const loaderGLTF = new GLTFLoader();
 
-      const listener = new THREE.AudioListener();
-camera.add( listener );
-const sound = new THREE.Audio( listener );
-const audioLoader = new THREE.AudioLoader();
-
-audioLoader.load( './Music_desierto.mp3', function( buffer ) {
-	sound.setBuffer( buffer );
-	sound.setLoop( true );
-	sound.setVolume( 0.5 );
-	sound.play();
-});
-
-      function onUserInteraction() {
-        iniciarMusica();
-        window.removeEventListener('click', onUserInteraction);
-        window.removeEventListener('keydown', onUserInteraction);
-    }
-
-    window.addEventListener('click', onUserInteraction);
-    window.addEventListener('keydown', onUserInteraction);
       //desierto
       loaderGLTF.load(
         "./modelos/terreno2.glb",
@@ -69,6 +72,7 @@ audioLoader.load( './Music_desierto.mp3', function( buffer ) {
           scene.add(obj);
         }
       );
+
 
 //roca grande
       loaderGLTF.load(
@@ -97,14 +101,13 @@ function cargarModeloEnPosicion(posicion) {
     );
 }
 
-// Se agregan pino
+// Se agregan rocas
 cargarModeloEnPosicion(new THREE.Vector3(-20, 2, 0));
 cargarModeloEnPosicion(new THREE.Vector3(3, 2, -17));
 cargarModeloEnPosicion(new THREE.Vector3(20, 2, 4));
 cargarModeloEnPosicion(new THREE.Vector3(20, 2, 0));
 cargarModeloEnPosicion(new THREE.Vector3(0, 2, -20)); 
 cargarModeloEnPosicion(new THREE.Vector3(0, 1, 20)); 
-
 
 
 //Camello
@@ -148,14 +151,17 @@ loaderGLTF.load(
 
 // Función para cargar el modelo de rayo y añadir una animación de rotación
 function cargarModeloConAnimacion(posicion) {
-    
     loaderGLTF.load(
         "./modelos/rayo.glb",
         function (model) {
             const obj = model.scene.clone(); 
             obj.position.copy(posicion); 
-            obj.scale.set(0.8, 0.5, 0.8);
+            obj.scale.set(0.3, 0.5, 0.3);
             scene.add(obj); 
+            
+            // Crear una luz que emita desde el modelo
+            const luz = new THREE.PointLight(0xff0000, 1, 100); // Color rojo, intensidad 1
+            obj.add(luz); // Agregar la luz al modelo
 
             // Guardar el objeto en una variable para acceder a él en la función de animación
             const rayoModel = obj;
@@ -178,19 +184,78 @@ function cargarModeloConAnimacion(posicion) {
     );
 }
 
+
 // Llamar a la función para cargar el modelo con animación
 cargarModeloConAnimacion(new THREE.Vector3(13, 2, 0));
 
 
+// Función para crear partículas
+function crearParticulas() {
+    const cantidadParticulas = 500; // Número de partículas
+    const geometriaParticulas = new THREE.SphereGeometry(0.1); // Geometría de las partículas (bolas amarillas)
+    const materialParticulas = new THREE.MeshBasicMaterial({ color: 0xffff00 }); // Material de las partículas (amarillo)
 
+    // Crear un grupo para almacenar todas las partículas
+    const grupoParticulas = new THREE.Group();
 
-      
+    // Distribuir aleatoriamente las partículas en el área del nivel y asignarles una velocidad
+    for (let i = 0; i < cantidadParticulas; i++) {
+        const particula = new THREE.Mesh(geometriaParticulas, materialParticulas);
+        const x = Math.random() * 40 - 20; // Coordenada x aleatoria
+        const y = Math.random() * 2; // Coordeninada y aleatoria (altura)
+        const z = Math.random() * 40 - 20; // Coordenada z aleatoria
+        particula.position.set(x, y, z); // Establecer la posición inicial de la partícula
+
+        // Asignar una velocidad aleatoria en la dirección del viento
+        const velocidad = new THREE.Vector3(Math.random() * 0.1 - 0.05, Math.random() * 0.05, Math.random() * 0.1 - 0.05);
+        particula.userData.velocidad = velocidad;
+
+        grupoParticulas.add(particula); // Agregar la partícula al grupo
+    }
+
+    // Agregar el grupo de partículas al nivel
+    scene.add(grupoParticulas);
+
+    // Función para actualizar la posición de las partículas en cada cuadro de animación
+    function actualizarParticulas() {
+        grupoParticulas.children.forEach(particula => {
+            particula.position.add(particula.userData.velocidad); // Actualizar la posición de la partícula según su velocidad
+        });
+    }
+
+    // Llamar a la función de actualización en cada cuadro de animación
+    renderer.setAnimationLoop(() => {
+        actualizarParticulas();
+        renderer.render(scene, camera);
+    });
+}
+
+           // Crear las partículas
+           crearParticulas();
+    
 function animate() {
         requestAnimationFrame(animate);
         renderer.render(scene, camera);
       }
       animate();
 
+      const listener = new THREE.AudioListener();
+camera.add( listener );
+const sound = new THREE.Audio( listener );
+const audioLoader = new THREE.AudioLoader();
+//SONIDO SOUNDTRACK
+audioLoader.load( './Music_desierto.mp3', function( buffer ) {
+	sound.setBuffer( buffer );
+	sound.setLoop( true );
+	sound.setVolume( 0.1 );
+	sound.play();
+});
+
+ // Agregar evento de clic al botón de pausa
+ document.getElementById("pausaButton").addEventListener("click", function() {
+            // Redireccionar a la página de pausa
+            window.location.href = "pausa.html";
+        });
 
     </script>
     

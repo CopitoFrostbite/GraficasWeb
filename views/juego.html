@@ -29,17 +29,18 @@
   import { GLTFLoader } from './GLTFLoader.js';
   import Player from './scripts/player.js';
   import PlayerControls from './scripts/playerControls.js';
-  import { checkPlayerCollisions,updatePhysics } from './scripts/physics.js';
+  import { checkPlayerCollisions, updatePhysics } from './scripts/physics.js';
   import { db } from './scripts/firebaseConfig.js';
   import {      
       ref,
       onValue,
       set,
       update,
-      remove
+      remove,
+      get
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-  import { cargarModeloEnPosicion, cargarModelo, cargarAnimaciones,cargarPowerupEnPosicion } from './utils.js';
- 
+  import { cargarModeloEnPosicion, cargarModelo, cargarAnimaciones, cargarPowerupEnPosicion } from './utils.js';
+
   const roomId = localStorage.getItem('roomId');
   const currentUser = JSON.parse(localStorage.getItem('currentUser'));
 
@@ -134,9 +135,14 @@
 
     renderer.domElement.tabIndex = '0';
     renderer.domElement.focus();
-
     const playerControls = new PlayerControls(camera, renderer.domElement);
-    const isHost = localStorage.getItem('isHost') === 'true';
+    // Obtener el ID del host de la base de datos y compararlo con el usuario actual
+    const roomRef = ref(db, `rooms/${roomId}`);
+    const roomSnapshot = await get(roomRef);
+    const roomData = roomSnapshot.val();
+    const hostId = roomData.host;
+
+    const isHost = currentUser.uid === hostId;
     const newPlayer = new Player(currentUser.uid, playerModelData, "Zorro", playerControls, scene, terrainMesh, db, roomId, isHost);
 
     await cargarAnimaciones('./modelos/AnimacionZorroRun.glb', newPlayer.animations.mixer);
@@ -161,8 +167,14 @@
     playerModelData.scene.rotation.set(playerData.rotation.x, playerData.rotation.y, playerData.rotation.z);
     playerModelData.scene.scale.set(0.8, 0.8, 0.8);
 
-    const isHost = localStorage.getItem('isHost') === 'true';
-    const newPlayer = new Player(playerId, playerModelData, "Conejo", null, scene, terrainMesh, db, roomId);
+    // Obtener el ID del host de la base de datos y compararlo con el usuario actual
+    const roomRef = ref(db, `rooms/${roomId}`);
+    const roomSnapshot = await get(roomRef);
+    const roomData = roomSnapshot.val();
+    const hostId = roomData.host;
+
+    const isHost = currentUser.uid === hostId;
+    const newPlayer = new Player(playerId, playerModelData, "Conejo", null, scene, terrainMesh, db, roomId, isHost);
     newPlayer.mesh.position.set(playerData.position.x, playerData.position.y, playerData.position.z);
     newPlayer.mesh.rotation.set(playerData.rotation.x, playerData.rotation.y, playerData.rotation.z);
     newPlayer.velocity.set(playerData.velocity.x, playerData.velocity.y, playerData.velocity.z);
@@ -228,7 +240,7 @@
     updateDatabase();
   }
 
-   function animateClient() {
+  function animateClient() {
     animationFrameId = requestAnimationFrame(animateClient);
     const deltaTime = clock.getDelta();
 

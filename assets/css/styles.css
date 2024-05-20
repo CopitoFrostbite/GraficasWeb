@@ -31,7 +31,7 @@ body {
     cursor: pointer;
     margin: 10px 0;
     transition: background-color 0.3s;
-    width: 240px; /* Ancho del botón */
+    width: 240px;
 }
 
 .button-container button:hover {
@@ -196,10 +196,9 @@ body {
     color: white; 
 }
 
-/* Agrega un identificador de clase para aumentar la especificidad */
 .language-options .language-label {
-    margin-top: 10px; /* Ajusta el margen-top según sea necesario */
-    margin-bottom: 10px; /* Ajusta el margen-bottom según sea necesario */
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 .language-options input[type="radio"]:checked + label {
@@ -207,44 +206,44 @@ body {
 }
 
 .volume-bar {
-    width: 80%; /* Ancho de la barra de sonido */
-    margin: 0 auto; /* Centrado horizontal */
+    width: 80%;
+    margin: 0 auto;
 }
 
 #volume-slider {
-    width: 100%; /* Ancho completo de la barra de desplazamiento */
-    height: 10px; /* Altura de la barra de desplazamiento */
-    -webkit-appearance: none; /* Eliminar estilos predeterminados del navegador */
+    width: 100%;
+    height: 10px;
+    -webkit-appearance: none;
     appearance: none;
-    background-color: #ADD8E6; /* Color de fondo de la barra de desplazamiento */
-    border-radius: 5px; /* Bordes redondeados */
-    outline: none; /* Eliminar el contorno al hacer clic */
+    background-color: #ADD8E6;
+    border-radius: 5px;
+    outline: none;
 }
 
 #volume-slider::-webkit-slider-thumb {
-    -webkit-appearance: none; /* Eliminar estilos predeterminados del navegador */
+    -webkit-appearance: none;
     appearance: none;
-    width: 20px; /* Ancho del control deslizante */
-    height: 20px; /* Altura del control deslizante */
-    background-color: #FFFFFF; /* Color del control deslizante */
-    border-radius: 50%; /* Bordes redondeados */
-    cursor: pointer; /* Cambiar el cursor al pasar sobre el control deslizante */
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3); /* Sombra del control deslizante */
+    width: 20px;
+    height: 20px;
+    background-color: #FFFFFF;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
 }
 
 #volume-slider::-moz-range-thumb {
-    width: 20px; /* Ancho del control deslizante */
-    height: 20px; /* Altura del control deslizante */
-    background-color: #FFFFFF; /* Color del control deslizante */
-    border-radius: 50%; /* Bordes redondeados */
-    cursor: pointer; /* Cambiar el cursor al pasar sobre el control deslizante */
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3); /* Sombra del control deslizante */
+    width: 20px;
+    height: 20px;
+    background-color: #FFFFFF;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
 }
 
 #settings label {
-    color: white; /* Color del texto */
-    font-size: 18px; /* Tamaño de la fuente */
-    margin-bottom: 10px; /* Espaciado inferior */
+    color: white;
+    font-size: 18px;
+    margin-bottom: 10px;
 }
 
 #back.return-button {
@@ -269,23 +268,20 @@ th {
     background-color: #f2f2f2;
 }
 
-/* Estilos para el contenedor de la tabla */
 .table-container {
     background-color: #ADD8E6;
     border-radius: 20px;
-    max-width: 90%; /* Cambiar el ancho del contenedor */
+    max-width: 90%;
     margin: 0 auto;
     padding: 20px;
-    
 }
 
 .score-table {
     border-collapse: collapse;
-    width: 90%; /* Cambiar el ancho de la tabla */
-    margin: 0 auto; /* Centrar la tabla horizontalmente */
+    width: 90%;
+    margin: 0 auto;
 }
 
-/* Estilos para el título de la tabla */
 .table-title {
     text-align: center;
     font-size: 24px;
@@ -300,6 +296,102 @@ th {
 
 .score-table th {
     background-color: #f2f2f2;
+}
+
+.selection-container {
+    margin: 20px;
+    padding: 20px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    text-align: center;
+}
+.selection-container h2 {
+    margin-top: 0;
+}
+.selection-container select {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0 20px;
+    font-size: 16px;
+}
+.selection-container button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.selection-container button:hover {
+    background-color: #45a049;
+}
+
+/* Estilos para el modal */
+.modal {
+    display: none; /* Oculto por defecto */
+    position: fixed; /* Quedarse en su lugar */
+    z-index: 1; /* Sentarse en la parte superior */
+    left: 0;
+    top: 0;
+    width: 100%; /* Ancho completo */
+    height: 100%; /* Altura completa */
+    overflow: auto; /* Habilitar desplazamiento si es necesario */
+    background-color: rgba(0,0,0,0.4); /* Negro con opacidad */
+}
+
+.modal-content {
+    background-color: #ADD8E6;
+    margin: 15% auto; /* 15% desde la parte superior y centrado */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 40%; /* Puede ser más o menos, dependiendo del tamaño de la pantalla */
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.modal h2 {
+    color: rgb(3, 14, 3);
+    text-align: center;
+}
+
+.modal select, .modal button {
+    display: block;
+    width: 100%;
+    margin: 10px 0;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+.modal button {
+    background-color: rgb(253, 188, 180);
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.modal button:hover {
+    background-color: #45a049;
 }
 
 /* Colores específicos de la paleta */

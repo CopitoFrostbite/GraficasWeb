@@ -21,11 +21,35 @@
 
     <div id="main-menu" class="panel">
         <ul>
-            <li><a href="../views/juego.html" id="play">Jugar</a></li>
+            <li><a href="#" id="play">Jugar</a></li>
             <li><a href="../views/config.html" id="options">Opciones</a></li>
             <li><a href="../views/score.html" id="score">Puntaje</a></li>
         </ul>
         <img src="../assets/pictures/art2.png" alt="PawPush Paradise Art" class="art">
+    </div>
+
+    <div id="game-modal" class="modal">
+        <img src="../assets/pictures/logo1.jpg" alt="PawPush Paradise Logo" class="logo">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Seleccionar Modo de Juego</h2>
+            <select id="game-mode">
+                <option value="mode1">Sobrevive</option>
+                <option value="mode2">Monedas</option>
+            </select>
+            <h2>Seleccionar Dificultad</h2>
+            <select id="difficulty">
+                <option value="easy">Fácil</option>                
+                <option value="hard">Difícil</option>
+            </select>
+            <h2>Seleccionar Escenario</h2>
+            <select id="scene">
+                <option value="scene1">Picos de Patita Helada</option>
+                <option value="scene2">Safari de Abrazos Arenosos</option>
+                <option value="scene3">Montaña de Miau Magmático</option>
+            </select>
+            <button type="button" id="confirm-create-room">Crear Sala</button>
+        </div>
     </div>
 
     <script type="module">
@@ -60,12 +84,16 @@
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
         const db = getDatabase(app);
+        const modal = document.getElementById("game-modal");
+        const closeModal = document.getElementsByClassName("close")[0];
         let currentUser;
 
         const buttonLogin = document.getElementById("btn-login");
         const buttonLogout = document.getElementById("btn-logout");
         const buttonCreateRoom = document.getElementById("btn-create-room");
+        const confirmCreateRoom = document.getElementById("confirm-create-room");
         const roomListDiv = document.getElementById("room-list");
+        const playButton = document.getElementById("play");
 
         buttonLogin.addEventListener("click", async function () {
             try {
@@ -98,21 +126,62 @@
             }
         });
 
-        buttonCreateRoom.addEventListener("click", async function () {
+        buttonCreateRoom.addEventListener("click", function () {
+            modal.style.display = "block";
+        });
+
+        confirmCreateRoom.addEventListener("click", async function () {
             try {
                 const newRoomRef = push(ref(db, 'rooms'));
                 const roomId = newRoomRef.key;
 
+                const gameMode = document.getElementById("game-mode").value;
+                const difficulty = document.getElementById("difficulty").value;
+                const scene = document.getElementById("scene").value;
+
                 await set(newRoomRef, {
                     roomId: roomId,
                     host: currentUser.uid,
-                    players: {}
+                    players: {},
+                    gameMode: gameMode,
+                    difficulty: difficulty,
+                    scene: scene
                 });
 
-                await joinRoom(roomId, true); // Setting isHost to true for room creator
+                await joinRoom(roomId, true);
+                modal.style.display = "none"; // Close modal after creating the room
             } catch (error) {
                 console.error("Error creating room:", error);
             }
+        });
+
+        closeModal.addEventListener("click", function () {
+            modal.style.display = "none";
+        });
+          
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        };
+
+        playButton.addEventListener("click", function () {
+            const scene = localStorage.getItem('selectedScene');
+            let url;
+            switch(scene) {
+                case "scene1":
+                    url = "../views/juego.html";
+                    break;
+                case "scene2":
+                    url = "../views/juego2.html";
+                    break;
+                case "scene3":
+                    url = "../views/juego3.html";
+                    break;
+                default:
+                    url = "../views/juego.html";
+            }
+            window.location.href = url;
         });
 
         function loadRooms() {
@@ -154,23 +223,25 @@
 
                 await set(ref(db, `rooms/${roomId}/players/${currentUser.uid}`), playerData);
 
-              
+                // Guardar información de la sala en localStorage
+                localStorage.setItem('roomId', roomId);
+                localStorage.setItem('isHost', roomData.host === currentUser.uid);
+                localStorage.setItem('selectedScene', roomData.scene);
+
                 console.log(localStorage.getItem('currentUser'));
                 console.log(localStorage.getItem('roomId'));
                 console.log(playerData.isHost);
+                console.log(localStorage.getItem('selectedScene'));
                 //window.location.href = 'juego.html';
             } catch (error) {
                 console.error("Error joining room:", error);
             }
         }
 
-
         if (localStorage.getItem('currentUser')) {
             currentUser = JSON.parse(localStorage.getItem('currentUser'));
             loadRooms();
         }
-
-       
     </script>
 </body>
 </html>
