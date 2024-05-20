@@ -7,9 +7,7 @@
     <link rel="stylesheet" href="../assets/css/pausa.css">
     <style>
       body { margin: 0; }
-     
-      
-  </style>
+    </style>
 </head>
 <body>
 
@@ -23,7 +21,7 @@
           <li><a href="#" id="salir">Menu Principal</a></li>
         </ul>
     </div>
-</div>
+  </div>
 
 <script type="module">
   import * as THREE from './three.module.js';
@@ -31,13 +29,14 @@
   import { GLTFLoader } from './GLTFLoader.js';
   import Player from './scripts/player.js';
   import PlayerControls from './scripts/playerControls.js';
-  import { checkPlayerCollisions } from './scripts/physics.js';
-  import { db } from './scripts/firebaseConfig.js';  
+  import { checkPlayerCollisions,updatePhysics } from './scripts/physics.js';
+  import { db } from './scripts/firebaseConfig.js';
   import {      
       ref,
       onValue,
       set,
-      update
+      update,
+      remove
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
   import { cargarModeloEnPosicion, cargarModelo, cargarAnimaciones,cargarPowerupEnPosicion } from './utils.js';
  
@@ -55,6 +54,7 @@
   const mixers = [];
   const players = {};
   let rayoModel = null;
+  let animationFrameId;
 
   loader.load('./fondo hielo.jpg', function (texture) {
     scene.background = texture;
@@ -101,7 +101,6 @@
     cargarModeloEnPosicion('./modelos/PolarBear.glb', new THREE.Vector3(15, 1.5, -17), new THREE.Vector3(0.5, 0.5, 0.5), scene, mixers);
     cargarPowerupEnPosicion('./modelos/rayo.glb', new THREE.Vector3(-13, 2, 0), new THREE.Vector3(0.8, 0.5, 0.8), scene, mixers);
     
-
     await initPlayer(terrainMesh);
 
     // Leer todos los jugadores en la sala
@@ -120,20 +119,8 @@
         }
     });
 
-    if (localStorage.getItem('isHost') === 'true') {
-        console.log("Soy el host, iniciar lógica de host...");
-        // Código específico para el host
-        requestAnimationFrame(animateHost);
-    } else {
-        console.log("Soy un cliente, iniciar lógica de cliente...");
-        // Código específico para el cliente
-        requestAnimationFrame(animateClient);
-    }
-
+    startGame();
   }
-
-  console.log(localStorage.getItem('currentUser'));
-  console.log(localStorage.getItem('roomId'));
 
   async function initPlayer(terrainMesh) {
     const playerModelData = await cargarModelo('./modelos/StaticZorroR.glb');
@@ -160,6 +147,7 @@
 
     players[currentUser.uid] = newPlayer;
     scene.add(playerModelData.scene);
+    await newPlayer.saveToDatabase();
   }
 
   async function addPlayerToScene(playerId, playerData, terrainMesh) {
@@ -202,104 +190,74 @@
     player.tackleHitbox.set(new THREE.Vector3(playerData.tackleHitbox.min.x, playerData.tackleHitbox.min.y, playerData.tackleHitbox.min.z), new THREE.Vector3(playerData.tackleHitbox.max.x, playerData.tackleHitbox.max.y, playerData.tackleHitbox.max.z));
   }
 
+  function startGame() {
+    if (localStorage.getItem('isHost') === 'true') {
+        console.log("Soy el host, iniciar lógica de host...");
+        animationFrameId = requestAnimationFrame(animateHost);
+    } else {
+        console.log("Soy un cliente, iniciar lógica de cliente...");
+        animationFrameId = requestAnimationFrame(animateClient);
+    }
+  }
+
+  function endGame() {
+    cancelAnimationFrame(animationFrameId);
+    console.log("Juego finalizado.");
+    // Limpiar recursos y referencias si es necesario
+  }
+
+  function animateHost() {
+    animationFrameId = requestAnimationFrame(animateHost);
+    const deltaTime = clock.getDelta();
+
+    mixers.forEach(mixer => mixer.update(deltaTime));
+
+    for (const playerId in players) {
+        players[playerId].update(deltaTime);
+        
+    }
+    
+    checkPlayerCollisions(Object.values(players)); // Cambiado para que solo el host maneje colisiones
+
+    if (rayoModel) {
+        rayoModel.rotation.y += 0.01;
+    }
+
+    renderer.render(scene, camera);
+
+    updateDatabase();
+  }
+
+   function animateClient() {
+    animationFrameId = requestAnimationFrame(animateClient);
+    const deltaTime = clock.getDelta();
+
+    mixers.forEach(mixer => mixer.update(deltaTime));
+
+    for (const playerId in players) {
+        players[playerId].update(deltaTime);
+    }
+
+    if (rayoModel) {
+        rayoModel.rotation.y += 0.01;
+    }
+
+    renderer.render(scene, camera);
+  }
+
   let lastDatabaseUpdate = Date.now();
   const databaseUpdateInterval = 1000;
-  const now = Date.now();
-  if (now - lastDatabaseUpdate >= databaseUpdateInterval) {  
-    function updateDatabase() {
+
+  function updateDatabase() {
+    const now = Date.now();
+    if (now - lastDatabaseUpdate >= databaseUpdateInterval) {
         for (const playerId in players) {
             const player = players[playerId];
-            set(ref(db, `rooms/${roomId}/players/${playerId}`), {
-                uid: playerId,
-                characterName: player.characterName,
-                position: {
-                    x: player.mesh.position.x,
-                    y: player.mesh.position.y,
-                    z: player.mesh.position.z
-                },
-                rotation: {
-                    x: player.mesh.rotation.x,
-                    y: player.mesh.rotation.y,
-                    z: player.mesh.rotation.z
-                },
-                velocity: {
-                    x: player.velocity.x,
-                    y: player.velocity.y,
-                    z: player.velocity.z
-                },
-                tackleState: player.tackleState,
-                hitbox: {
-                    min: {
-                        x: player.hitbox.min.x,
-                        y: player.hitbox.min.y,
-                        z: player.hitbox.min.z
-                    },
-                    max: {
-                        x: player.hitbox.max.x,
-                        y: player.hitbox.max.y,
-                        z: player.hitbox.max.z
-                    }
-                },
-                tackleHitbox: {
-                    min: {
-                        x: player.tackleHitbox.min.x,
-                        y: player.tackleHitbox.min.y,
-                        z: player.tackleHitbox.min.z
-                    },
-                    max: {
-                        x: player.tackleHitbox.max.x,
-                        y: player.tackleHitbox.max.z
-                    }
-                }
-            });
+            player.saveToDatabase(); // Nuevo cambio
         }
         lastDatabaseUpdate = now;
     }
   }
-
-  let lastFrameTime = Date.now();
-
-  function animateHost() {
-    requestAnimationFrame(animateHost);
-    const deltaTime = clock.getDelta();
-
-    mixers.forEach(mixer => mixer.update(deltaTime));
-
-    for (const playerId in players) {
-        players[playerId].update(deltaTime);
-    }
-
-    checkPlayerCollisions(Object.values(players));
-
-    if (rayoModel) {
-        rayoModel.rotation.y += 0.01;
-    }
-
-    renderer.render(scene, camera);
-
-    //updateDatabase(); // Only the host updates the database
-  }
-
-  function animateClient() {
-    requestAnimationFrame(animateClient);
-    const deltaTime = clock.getDelta();
-
-    mixers.forEach(mixer => mixer.update(deltaTime));
-
-    for (const playerId in players) {
-        players[playerId].update(deltaTime);
-    }
-
-    checkPlayerCollisions(Object.values(players));
-
-    if (rayoModel) {
-        rayoModel.rotation.y += 0.01;
-    }
-
-    renderer.render(scene, camera);
-  }
-
-  init();
 
   // Pausar y reanudar el juego
   let isPaused = false;
@@ -309,13 +267,11 @@
       if (isPaused) {
           pauseModal.style.display = 'none';
           isPaused = false;
-         
-          requestAnimationFrame(localStorage.getItem('isHost') === 'true' ? animateHost : animateClient);
+          startGame();  // Reanudar el bucle de juego
       } else {
           pauseModal.style.display = 'flex';
           isPaused = true;
-          
-          cancelAnimationFrame(localStorage.getItem('isHost') === 'true' ? animateHost : animateClient);
+          cancelAnimationFrame(animationFrameId);  // Pausar el bucle de juego
       }
   }
 
@@ -332,6 +288,7 @@
 
   document.getElementById('salir').addEventListener('click', function(event) {
       event.preventDefault();
+      endGame();
 
       if (localStorage.getItem('isHost') === 'true') {
           // Eliminar toda la sala
@@ -349,6 +306,9 @@
           });
       }
   });
+
+  init();
+
 </script>
 
 </body>

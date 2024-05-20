@@ -43,15 +43,18 @@ function checkPlayerCollisions(players) {
             const player1 = players[i];
             const player2 = players[j];
 
-            if (player1.hitbox.intersectsBox(player2.hitbox)) {
-                console.log(`Player ${player1.id} ha colisionado con Player ${player2.id}`);
-
+           if (player1.hitbox.intersectsBox(player2.hitbox)) {
                 // Calcula la dirección del empuje
                 const direction = new THREE.Vector3().subVectors(player2.mesh.position, player1.mesh.position).normalize();
 
                 // Aplica la fuerza de empuje a ambos jugadores
-                player1.push(direction.clone().multiplyScalar(-pushStrength));
-                player2.push(direction.clone().multiplyScalar(pushStrength));
+                const player1Push = direction.clone().multiplyScalar(-pushStrength);
+                const player2Push = direction.clone().multiplyScalar(pushStrength);
+
+                player1.push(player1Push);
+                player2.push(player2Push);
+
+                console.log(`Player ${player1.id} ha colisionado con Player ${player2.id}`);
             }
 
             // Verificar tacleo

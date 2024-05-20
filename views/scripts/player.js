@@ -1,11 +1,8 @@
 import * as THREE from '../three.module.js';
 import { updatePhysics } from './physics.js';
 import Animations from './animations.js';
-import {
-    ref,
-    set
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
+import { ref, set, update, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { db } from './firebaseConfig.js';
 const TACKLE_STATE = {
     IDLE: 'idle',
     STARTUP: 'startup',
@@ -22,7 +19,7 @@ class Player {
         this.controls = controls;
         this.scene = scene;
         this.terrainMesh = terrainMesh;
-        this.databaseRef = databaseRef; // Referencia a la base de datos de Firebase
+        this.databaseRef = db; // Referencia a la base de datos de Firebase
         this.roomId = roomId; // ID de la sala
         this.velocity = new THREE.Vector3();
         this.friction = 0.98;
@@ -82,7 +79,7 @@ class Player {
         this.animations.update(deltaTime);
 
         // Enviar la posición y estado actualizados a Firebase
-        this.updateDatabase();
+        this.saveToDatabase();
     }
 
     handleInput(deltaTime) {
@@ -190,7 +187,7 @@ class Player {
         this.velocity.add(force);
     }
 
-    updateDatabase() {
+   async saveToDatabase() {
         set(ref(this.databaseRef, `rooms/${this.roomId}/players/${this.id}`), {
             uid: this.id,
             characterName: this.characterName,
@@ -235,7 +232,17 @@ class Player {
                 }
             }
         });
-    }
+    }  catch (error) {
+        console.error("Error al guardar el jugador en la base de datos:", error);
+      }
+
+      async removeFromDatabase() {
+        try {
+          await remove(ref(this.db, `rooms/${this.roomId}/players/${this.uid}`));
+        } catch (error) {
+          console.error("Error al eliminar el jugador de la base de datos:", error);
+        }
+      }
 }
 
 export default Player;

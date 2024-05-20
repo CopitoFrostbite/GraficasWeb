@@ -40,6 +40,7 @@
             getDatabase,
             ref,
             set,
+            get,
             push,
             onValue,
         } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -108,7 +109,7 @@
                     players: {}
                 });
 
-                joinRoom(roomId);
+                await joinRoom(roomId, true); // Setting isHost to true for room creator
             } catch (error) {
                 console.error("Error creating room:", error);
             }
@@ -127,35 +128,49 @@
             });
         }
 
-        async function joinRoom(roomId) {
-            const characterName = "Character1"; // Este valor puede ser dinámico según la selección del jugador
-            const initialPosition = { x: 0, y: 8, z: 0 };
-            const initialVelocity = { x: 0, y: 0, z: 0 };
-            const initialHitbox = { min: { x: -0.5, y: -0.5, z: -0.5 }, max: { x: 0.5, y: 0.5, z: 0.5 } };
-            const initialTackleHitbox = { min: { x: -0.5, y: -0.5, z: -0.5 }, max: { x: 0.5, y: 0.5, z: 0.5 } };
+        async function joinRoom(roomId, isHost) {
+            try {
+                const roomRef = ref(db, `rooms/${roomId}`);
+                const roomSnapshot = await get(roomRef);
+                const roomData = roomSnapshot.val();
 
-            await set(ref(db, `rooms/${roomId}/players/${currentUser.uid}`), {
-                uid: currentUser.uid,
-                characterName: characterName,
-                position: initialPosition,
-                rotation: initialVelocity,
-                velocity: initialVelocity,
-                tackleState: "idle",
-                hitbox: initialHitbox,
-                tackleHitbox: initialTackleHitbox
-            });
+                const characterName = "Character1"; // Este valor puede ser dinámico según la selección del jugador
+                const initialPosition = { x: 0, y: 8, z: 0 };
+                const initialVelocity = { x: 0, y: 0, z: 0 };
+                const initialHitbox = { min: { x: -0.5, y: -0.5, z: -0.5 }, max: { x: 0.5, y: 0.5, z: 0.5 } };
+                const initialTackleHitbox = { min: { x: -0.5, y: -0.5, z: -0.5 }, max: { x: 0.5, y: 0.5, z: 0.5 } };
 
-            localStorage.setItem('roomId', roomId);
-            localStorage.setItem('isHost', true);  // Guardar información de que este jugador es el host
-            console.log(localStorage.getItem('currentUser'));
-            console.log(localStorage.getItem('roomId'));
-            //window.location.href = 'juego.html';
+                const playerData = {
+                    uid: currentUser.uid,
+                    characterName: characterName,
+                    position: initialPosition,
+                    rotation: initialVelocity,
+                    velocity: initialVelocity,
+                    tackleState: "idle",
+                    hitbox: initialHitbox,
+                    tackleHitbox: initialTackleHitbox,
+                    isHost: roomData.host === currentUser.uid
+                };
+
+                await set(ref(db, `rooms/${roomId}/players/${currentUser.uid}`), playerData);
+
+              
+                console.log(localStorage.getItem('currentUser'));
+                console.log(localStorage.getItem('roomId'));
+                console.log(playerData.isHost);
+                //window.location.href = 'juego.html';
+            } catch (error) {
+                console.error("Error joining room:", error);
+            }
         }
+
 
         if (localStorage.getItem('currentUser')) {
             currentUser = JSON.parse(localStorage.getItem('currentUser'));
             loadRooms();
         }
+
+       
     </script>
 </body>
 </html>
