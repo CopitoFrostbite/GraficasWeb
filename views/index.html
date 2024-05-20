@@ -15,9 +15,10 @@
         <button type="button" id="btn-login">Iniciar sesión con Google</button>
         <button type="button" id="btn-logout">Logout</button>
         <button type="button" id="btn-create-room">Crear Sala</button>
+        <button type="button" id="btn-toggle-rooms">Mostrar/Ocultar Salas</button>
     </div>
 
-    <div id="room-list" aria-label="Lista de Salas"></div>
+    <div id="room-list" aria-label="Lista de Salas" class="hidden"></div>
 
     <div id="main-menu" class="panel">
         <ul>
@@ -94,6 +95,7 @@
         const confirmCreateRoom = document.getElementById("confirm-create-room");
         const roomListDiv = document.getElementById("room-list");
         const playButton = document.getElementById("play");
+        const toggleRoomsButton = document.getElementById("btn-toggle-rooms");
 
         buttonLogin.addEventListener("click", async function () {
             try {
@@ -184,13 +186,41 @@
             window.location.href = url;
         });
 
+        toggleRoomsButton.addEventListener("click", function () {
+            if (roomListDiv.classList.contains("hidden")) {
+                roomListDiv.classList.remove("hidden");
+            } else {
+                roomListDiv.classList.add("hidden");
+            }
+        });
+
         function loadRooms() {
             onValue(ref(db, 'rooms'), (snapshot) => {
                 const rooms = snapshot.val();
+                const sceneNames = {
+                    'scene1': 'Picos de Patita Helada',
+                    'scene2': 'Safari de Abrazos Arenosos',
+                    'scene3': 'Montaña de Miau Magmático'
+                };
+
+                const gamemodeNames = {
+                    'mode1': 'Sobrevive',
+                    'mode2': 'Monedas'
+                };
+
+                const difficultyNames = {
+                    'easy': 'Fácil',
+                    'hard': 'Difícil'
+                };
+
                 roomListDiv.innerHTML = '';
                 for (const roomId in rooms) {
+                    const room = rooms[roomId];
+                    const sceneName = sceneNames[room.scene] || 'Unknown Scene';
+                    const gamemodeName = gamemodeNames[room.gameMode] || 'Unknown Mode';
+                    const difficultyName = difficultyNames[room.difficulty] || 'Unknown Difficulty';
                     const roomDiv = document.createElement('div');
-                    roomDiv.textContent = `Room ID: ${roomId}`;
+                    roomDiv.textContent = ` Sala" : ${roomId} | Dificultad: ${difficultyName} | Escenario: ${sceneName} | Modo de juego: ${gamemodeName}`;
                     roomDiv.addEventListener('click', () => joinRoom(roomId));
                     roomListDiv.appendChild(roomDiv);
                 }
@@ -232,6 +262,8 @@
                 console.log(localStorage.getItem('roomId'));
                 console.log(playerData.isHost);
                 console.log(localStorage.getItem('selectedScene'));
+                console.log(roomData.difficulty);
+                console.log(roomData.gameMode);
                 //window.location.href = 'juego.html';
             } catch (error) {
                 console.error("Error joining room:", error);

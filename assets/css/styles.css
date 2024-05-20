@@ -39,7 +39,7 @@ body {
 }
 
 #room-list {
-    width: 350px;
+    width: 460px;
     margin: 20px; 
     text-align: center;
     background-color: rgba(253, 188, 180, 0.8); 
@@ -392,6 +392,10 @@ th {
 
 .modal button:hover {
     background-color: #45a049;
+}
+
+.hidden {
+    display: none;
 }
 
 /* Colores específicos de la paleta */

@@ -27,6 +27,8 @@
   import * as THREE from './three.module.js';
   import { OrbitControls } from './OrbitControls.js';
   import { GLTFLoader } from './GLTFLoader.js';
+  import { TextGeometry } from './TextGeometry.js';
+  import { FontLoader } from './FontLoader.js';
   import Player from './scripts/player.js';
   import PlayerControls from './scripts/playerControls.js';
   import { checkPlayerCollisions, updatePhysics } from './scripts/physics.js';
@@ -39,7 +41,7 @@
       remove,
       get
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-  import { cargarModeloEnPosicion, cargarModelo, cargarAnimaciones, cargarPowerupEnPosicion } from './utils.js';
+  import { cargarModeloEnPosicion, cargarModelo, cargarAnimaciones, cargarPowerupEnPosicion, cargarMonedaEnPosicion } from './utils.js';
 
   const roomId = localStorage.getItem('roomId');
   const currentUser = JSON.parse(localStorage.getItem('currentUser'));
@@ -56,6 +58,9 @@
   const players = {};
   let rayoModel = null;
   let animationFrameId;
+  let difficulty, gameMode;
+  const monedas = [];
+
 
   loader.load('./fondo hielo.jpg', function (texture) {
     scene.background = texture;
@@ -104,9 +109,31 @@
     
     await initPlayer(terrainMesh);
 
-    // Leer todos los jugadores en la sala
-    onValue(ref(db, `rooms/${roomId}/players`), (snapshot) => {
-        const playersData = snapshot.val();
+    // Manejar la información de la sala
+    const roomRef = ref(db, `rooms/${roomId}`);
+    const roomSnapshot = await get(roomRef);
+    const roomData = roomSnapshot.val();
+    difficulty = roomData.difficulty;
+    gameMode = roomData.gameMode;
+
+    // Add 15 coins randomly if game mode is "mode2"
+    if (gameMode === 'mode2') {
+        for (let i = 0; i < 15; i++) {
+            const randomX = Math.random() * 45 - 25; 
+            const randomZ = Math.random() * 45 - 25; 
+            cargarMonedaEnPosicion('./modelos/Moneda.glb', new THREE.Vector3(randomX, 3, randomZ), new THREE.Vector3(0.1, 0.1, 0.1), scene, mixers).then(moneda => {
+                monedas.push(moneda);
+            });
+        }
+    }
+
+    onValue(roomRef, (snapshot) => {
+        const roomData = snapshot.val();
+        difficulty = roomData.difficulty;
+        gameMode = roomData.gameMode;
+      
+        // Manejar la información de los jugadores
+        const playersData = roomData.players;
         for (const playerId in playersData) {
             if (playersData.hasOwnProperty(playerId)) {
                 if (!players[playerId]) {
@@ -141,9 +168,12 @@
     const roomSnapshot = await get(roomRef);
     const roomData = roomSnapshot.val();
     const hostId = roomData.host;
+    console.log(roomData);
+    console.log(roomData.roomId);
+    console.log(roomRef);
 
     const isHost = currentUser.uid === hostId;
-    const newPlayer = new Player(currentUser.uid, playerModelData, "Zorro", playerControls, scene, terrainMesh, db, roomId, isHost);
+    const newPlayer = new Player(currentUser.uid, playerModelData, "Zorro", playerControls, scene, terrainMesh, db,gameMode, roomId, isHost);
 
     await cargarAnimaciones('./modelos/AnimacionZorroRun.glb', newPlayer.animations.mixer);
 
@@ -174,7 +204,7 @@
     const hostId = roomData.host;
 
     const isHost = currentUser.uid === hostId;
-    const newPlayer = new Player(playerId, playerModelData, "Conejo", null, scene, terrainMesh, db, roomId, isHost);
+    const newPlayer = new Player(playerId, playerModelData, "Conejo", null, scene, terrainMesh, db,gameMode, roomId, isHost);
     newPlayer.mesh.position.set(playerData.position.x, playerData.position.y, playerData.position.z);
     newPlayer.mesh.rotation.set(playerData.rotation.x, playerData.rotation.y, playerData.rotation.z);
     newPlayer.velocity.set(playerData.velocity.x, playerData.velocity.y, playerData.velocity.z);
@@ -213,9 +243,29 @@
   }
 
   function endGame() {
-    cancelAnimationFrame(animationFrameId);
-    console.log("Juego finalizado.");
-    // Limpiar recursos y referencias si es necesario
+    //cancelAnimationFrame(animationFrameId);
+    
+  }
+
+  function createMessage(text) {
+    const loader = new FontLoader();
+    loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function (font) {
+      const geometry = new TextGeometry(text, {
+        font: font,
+        size: 2,
+        depth: 1,
+        curveSegments: 12,
+        bevelEnabled: true,
+        bevelThickness: 0.5,
+        bevelSize: 0.5,
+        bevelSegments: 5,
+      });
+
+      const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+      const mesh = new THREE.Mesh(geometry, iceTexture);
+      mesh.position.set(-20, 10, 0);
+      scene.add(mesh);
+    });
   }
 
   function animateHost() {
@@ -227,9 +277,17 @@
     for (const playerId in players) {
         players[playerId].update(deltaTime);
         
+        if (gameMode === 'mode1') {
+            if (players[playerId].mesh.position.y < -10) {
+                endGame();
+                alert(`Jugador ${players[playerId].id} perdio por caerse del mapa.`);
+                return;
+            }
+        }
+        
     }
     
-    checkPlayerCollisions(Object.values(players)); // Cambiado para que solo el host maneje colisiones
+    checkPlayerCollisions(Object.values(players),difficulty,roomId,monedas,scene); 
 
     if (rayoModel) {
         rayoModel.rotation.y += 0.01;
@@ -238,6 +296,15 @@
     renderer.render(scene, camera);
 
     updateDatabase();
+    if (gameMode === 'mode2' && monedas.length === 0) {
+        const winner = Object.values(players).reduce((prev, current) => (prev.points > current.points) ? prev : current);
+        
+        
+        createMessage(`Jugador ${winner.characterName} ha ganado con ${winner.points} puntos.`);
+        endGame();
+        //return;
+        
+    }
   }
 
   function animateClient() {
@@ -249,7 +316,7 @@
     for (const playerId in players) {
         players[playerId].update(deltaTime);
     }
-
+    
     if (rayoModel) {
         rayoModel.rotation.y += 0.01;
     }

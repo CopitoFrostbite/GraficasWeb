@@ -11,13 +11,14 @@ const TACKLE_STATE = {
 };
 
 class Player {
-    constructor(id, gltf, characterName, controls, scene, terrainMesh, databaseRef, roomId, isHost) {
+    constructor(id, gltf, characterName, controls, scene, terrainMesh, databaseRef,gamemode, roomId, isHost) {
         this.id = id;
         this.characterName = characterName;
         this.mesh = gltf.scene;
         this.animations = new Animations(this.mesh, gltf);
         this.controls = controls;
         this.scene = scene;
+        this.score = 0;
         this.terrainMesh = terrainMesh;
         this.databaseRef = db; // Referencia a la base de datos de Firebase
         this.roomId = roomId; // ID de la sala

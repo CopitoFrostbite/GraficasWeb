@@ -36,9 +36,18 @@ function updatePhysics(player, deltaTime, terrainMesh) {
     }
 }
 
-function checkPlayerCollisions(players) {
-    const pushStrength = 5; // Ajusta la fuerza del empuje según sea necesario
-    const tacklePushStrength = 10; // Fuerza de empuje para el tacleo
+function checkPlayerCollisions(players,difficulty,roomId,monedas,scene) {
+    let pushStrength;
+    let tacklePushStrength;
+
+    // Establecer la fuerza de empuje según la dificultad
+    if (difficulty === 'easy') {
+        pushStrength = 3; 
+        tacklePushStrength = 5; 
+    } else if (difficulty === 'hard') {
+        pushStrength = 8; 
+        tacklePushStrength = 25; 
+    }
 
     for (let i = 0; i < players.length - 1; i++) {
         for (let j = i + 1; j < players.length; j++) {
@@ -61,27 +70,56 @@ function checkPlayerCollisions(players) {
             }
 
             // Verificar tacleo
+            
             if (player1.tackleState === 'active' && player1.tackleHitbox.intersectsBox(player2.hitbox)) {
                 const direction = new THREE.Vector3().subVectors(player2.mesh.position, player1.mesh.position).normalize();
                 player2.push(direction.multiplyScalar(tacklePushStrength));
                 console.log(`Player ${player1.id} tacleó a Player ${player2.id}`);
+                console.log(difficulty);
             }
 
             if (player2.tackleState === 'active' && player2.tackleHitbox.intersectsBox(player1.hitbox)) {
                 const direction = new THREE.Vector3().subVectors(player1.mesh.position, player2.mesh.position).normalize();
                 player1.push(direction.multiplyScalar(tacklePushStrength));
                 console.log(`Player ${player2.id} tacleó a Player ${player1.id}`);
+                console.log(difficulty);
             }
 
-            updatePlayerCollisionInDatabase(player1);
-            updatePlayerCollisionInDatabase(player2);
+            updatePlayerCollisionInDatabase(player1,roomId);
+            updatePlayerCollisionInDatabase(player2,roomId);
         }
     }
+
+     // Verificar colisiones de jugadores con monedas
+     for (const player of players) {
+        for (let i = monedas.length - 1; i >= 0; i--) {
+            const moneda = monedas[i];
+
+            if (player.hitbox.intersectsBox(moneda.hitbox)) {
+                // Destruir la moneda colisionada
+                scene.remove(moneda.modelo);
+                monedas.splice(i, 1);
+
+                // Sumar un punto al jugador
+                player.score = (player.score || 0) + 1;
+                console.log(`Player ${player.id} recogió una moneda. Puntuación: ${player.score}`);
+
+                // Actualizar la puntuación del jugador en la base de datos
+                updatePlayerScoreInDatabase(player, roomId);
+            }
+        }
+    }
+
     
 }
 
-function updatePlayerCollisionInDatabase(player) {
-    update(ref(db, `rooms/${player.roomId}/players/${player.id}`), {
+async function updatePlayerScoreInDatabase(player, roomId) {
+    const playerRef = ref(db, `rooms/${roomId}/players/${player.id}`);
+    await update(playerRef, { score: player.score });
+}
+
+function updatePlayerCollisionInDatabase(player,roomId) {
+    update(ref(db, `rooms/${roomId}/players/${player.id}`), {
         position: player.mesh.position,
         velocity: player.velocity,
         tackleState: player.tackleState,

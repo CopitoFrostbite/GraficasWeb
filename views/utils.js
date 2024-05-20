@@ -20,6 +20,31 @@ export async function cargarModeloEnPosicion(url, posicion, escala, scene, mixer
     });
 }
 
+export async function cargarMonedaEnPosicion(url, posicion, escala, scene, mixers) {
+    return loaderGLTF.loadAsync(url).then(gltf => {
+        const moneda = gltf.scene;
+        moneda.position.copy(posicion);
+        moneda.scale.copy(escala);
+        scene.add(moneda);
+        
+        if (gltf.animations.length > 0) {
+            const mixer = new THREE.AnimationMixer(moneda);
+            gltf.animations.forEach(clip => {
+                mixer.clipAction(clip).play();
+            });
+            mixers.push(mixer);
+        }
+
+        // Crear el objeto de la moneda con su hitbox
+        const monedaObjeto = {
+            modelo: moneda,
+            hitbox: new THREE.Box3().setFromObject(moneda)
+        };
+
+        return monedaObjeto;
+    });
+}
+
 export async function cargarPowerupEnPosicion(url, posicion, escala, scene, mixers) {
     return loaderGLTF.loadAsync(url).then(gltf => {
         const obj = gltf.scene;
