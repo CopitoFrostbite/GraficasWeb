@@ -188,6 +188,50 @@ function cargarModeloConAnimacion(posicion) {
 // Llamar a la función para cargar el modelo con animación
 cargarModeloConAnimacion(new THREE.Vector3(13, 2, 0));
 
+
+// Función para crear partículas
+function crearParticulas() {
+    const cantidadParticulas = 500; // Número de partículas
+    const geometriaParticulas = new THREE.SphereGeometry(0.1); // Geometría de las partículas (bolas amarillas)
+    const materialParticulas = new THREE.MeshBasicMaterial({ color: 0xffff00 }); // Material de las partículas (amarillo)
+
+    // Crear un grupo para almacenar todas las partículas
+    const grupoParticulas = new THREE.Group();
+
+    // Distribuir aleatoriamente las partículas en el área del nivel y asignarles una velocidad
+    for (let i = 0; i < cantidadParticulas; i++) {
+        const particula = new THREE.Mesh(geometriaParticulas, materialParticulas);
+        const x = Math.random() * 40 - 20; // Coordenada x aleatoria
+        const y = Math.random() * 2; // Coordeninada y aleatoria (altura)
+        const z = Math.random() * 40 - 20; // Coordenada z aleatoria
+        particula.position.set(x, y, z); // Establecer la posición inicial de la partícula
+
+        // Asignar una velocidad aleatoria en la dirección del viento
+        const velocidad = new THREE.Vector3(Math.random() * 0.1 - 0.05, Math.random() * 0.05, Math.random() * 0.1 - 0.05);
+        particula.userData.velocidad = velocidad;
+
+        grupoParticulas.add(particula); // Agregar la partícula al grupo
+    }
+
+    // Agregar el grupo de partículas al nivel
+    scene.add(grupoParticulas);
+
+    // Función para actualizar la posición de las partículas en cada cuadro de animación
+    function actualizarParticulas() {
+        grupoParticulas.children.forEach(particula => {
+            particula.position.add(particula.userData.velocidad); // Actualizar la posición de la partícula según su velocidad
+        });
+    }
+
+    // Llamar a la función de actualización en cada cuadro de animación
+    renderer.setAnimationLoop(() => {
+        actualizarParticulas();
+        renderer.render(scene, camera);
+    });
+}
+
+           // Crear las partículas
+           crearParticulas();
     
 function animate() {
         requestAnimationFrame(animate);
