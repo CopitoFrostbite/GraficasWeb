@@ -8,15 +8,31 @@
         body {
           margin: 0;
         }
+
+        #pausaButton {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 9999;
+
+            text-decoration: none;
+    color: white; 
+    background-color: #ADD8E6; 
+    padding: 5px 15px; 
+    border-radius: 40px;
+    display: inline-block;
+    transition: background-color 0.3s;
+    width: 100px; 
+    font-size: 10px;
+        }
+ 
       </style>
 </head>
 
-
-
-
-
-
 <body>
+      <!-- Botón de pausa -->
+      <button id="pausaButton">Pausa</button>
+
 
     <script type="module">
         import * as THREE from "./three.module.js";
@@ -29,13 +45,22 @@
 
       const scene = new THREE.Scene();
 
+//luz ambiental
+      const light = new THREE.AmbientLight(0x9c2d2d, 1.0); // soft white light
+    scene.add(light);
+
+     //luz focal
+     const spotLight = new THREE.SpotLight(0xf0bd00);
+spotLight.position.set(30, 10, 19);
+spotLight.angle = Math.PI / 4; // Ángulo de apertura del haz
+spotLight.penumbra = 0; // Suavidad del borde del haz
+spotLight.decay = 2; // Atenuación de la luz con la distancia
+spotLight.distance = 250; // Distancia máxima de alcance
+scene.add(spotLight);
+
       scene.fog = new THREE.Fog(0xc0f0ff, 0.1, 1000); //niebla
-
-
-      const loader = new THREE.TextureLoader();
-
-      
-
+      const loader = new THREE.TextureLoader(); 
+//FONDO
       loader.load("./fondo3.jpg", function (texture) {
         scene.background = texture;
       });
@@ -43,20 +68,18 @@
       const camera = new THREE.PerspectiveCamera(60,window.innerWidth / window.innerHeight);
       camera.position.set(0, 50, 0);
 
-      let target = new THREE.Vector3(0,2,0);
-      camera.lookAt(target);
-
+     //LUZ
       const hemisphereLight = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
       scene.add(hemisphereLight);
 
-      
+      //RENDER
       const renderer = new THREE.WebGLRenderer();
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
       const cameraControl = new OrbitControls(camera, renderer.domElement);
 
       //textura niebla
-      const smokeTexture = new THREE.TextureLoader().load("./modelos/niebla2.png");
+      const smokeTexture = new THREE.TextureLoader().load("./modelos/humo.png");
         smokeTexture.encoding = THREE.sRGBEncoding;
         const smokeGeometry = new THREE.PlaneGeometry(700, 50);
 
@@ -85,9 +108,7 @@
 
         window.addEventListener('resize', onWindowResize);
 
-
-
-
+//MODELO TERRENO
       const loaderGLTF = new GLTFLoader();
       //desierto
       loaderGLTF.load(
@@ -99,32 +120,7 @@
           scene.add(obj);
         }
       );
-
-
-    
-/*Funcion para cargar rocas
-function cargarModeloEnPosicion(posicion) {
-    loaderGLTF.load(
-        "./modelos/roca1.glb",
-        function (model) {
-            const obj = model.scene.clone(); 
-            obj.position.copy(posicion); 
-            obj.scale.set(3, 3, 3);
-            scene.add(obj); 
-        }
-    );
-}
-
-// Se agregan pino
-cargarModeloEnPosicion(new THREE.Vector3(-20, 2, 0));
-cargarModeloEnPosicion(new THREE.Vector3(3, 2, -17));
-cargarModeloEnPosicion(new THREE.Vector3(20, 2, 4));
-cargarModeloEnPosicion(new THREE.Vector3(20, 2, 0));
-cargarModeloEnPosicion(new THREE.Vector3(0, 2, -20)); 
-cargarModeloEnPosicion(new THREE.Vector3(0, 1, 20)); 
-
-*/
-
+//MODELO VOLCAN
 loaderGLTF.load(
         "./modelos/volcano.glb",
         function (model) {
@@ -178,14 +174,17 @@ loaderGLTF.load(
 
 // Función para cargar el modelo de rayo y añadir una animación de rotación
 function cargarModeloConAnimacion(posicion) {
-    
     loaderGLTF.load(
         "./modelos/rayo.glb",
         function (model) {
             const obj = model.scene.clone(); 
             obj.position.copy(posicion); 
-            obj.scale.set(0.8, 0.5, 0.8);
+            obj.scale.set(0.3, 0.5, 0.3);
             scene.add(obj); 
+            
+            // Crear una luz que emita desde el modelo
+            const luz = new THREE.PointLight(0xff0000, 1, 100); // Color rojo, intensidad 1
+            obj.add(luz); // Agregar la luz al modelo
 
             // Guardar el objeto en una variable para acceder a él en la función de animación
             const rayoModel = obj;
@@ -211,100 +210,102 @@ function cargarModeloConAnimacion(posicion) {
 // Llamar a la función para cargar el modelo con animación
 cargarModeloConAnimacion(new THREE.Vector3(13, -5, 15));
 
-
-
-
 // Función para cargar modelo de roca en una posición específica y hacer que caiga después de un retraso
 function cargarModeloEnPosicionYCaerConRetraso(posicion, retraso) {
     loaderGLTF.load(
-        "./modelos/meteor.glb",
-        function (model) {
-            const obj = model.scene.clone(); 
-            obj.position.copy(posicion); 
-            obj.scale.set(3, 3, 3);
-            scene.add(obj);
+    "./modelos/meteor.glb",
+    function (model) {
+        const obj = model.scene.clone(); 
+        obj.position.copy(posicion); 
+        obj.scale.set(3, 3, 3);
+        scene.add(obj);
 
-            
+        // Temporizador para iniciar la caída después de un retraso
+        setTimeout(() => {
+            iniciarCaída(obj);
+        }, retraso);
 
-            // Temporizador para iniciar la caída después de un retraso
-            setTimeout(() => {
-                iniciarCaída(obj);
-            }, retraso);
-
-            // Función para iniciar la caída de la roca
-            function iniciarCaída(roca) {
-                const velocidadDeCaída = 0.7; // Ajusta la velocidad de caída según sea necesario
-                animate();
-
-                function animate() {
-                    roca.position.y -= velocidadDeCaída;
-
-                    // Verificar si la roca ha llegado al suelo
-                    if (roca.position.y <= -7) {
-                 
-                        // Detener la animación
-                        return;
-                    }
-
-                    requestAnimationFrame(animate);
-                }
-            }
-        }
-    );
-}
-
-// Llamadas a la función para cargar y hacer caer los modelos de rocas con retraso
-cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(-17, 50, 0), 100); // 5 segundos de retraso
-cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(3, 50, -17), 1000); // 7 segundos de retraso
-cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(20, 50, 4), 3000);
-cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(-7, 50, 20),5000); // 7 segundos de retraso
-cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(10, 50, 4), 7000); // 10 segundos de retraso
-// Agrega más llamadas para cargar más rocas con diferentes retrasos si es necesario
-
-
-
-
-/*
-
-// Función para cargar modelo de roca en una posición específica y hacer que caiga
-function cargarModeloEnPosicionYCaer(posicion) {
-    loaderGLTF.load(
-        "./modelos/meteor.glb",
-        function (model) {
-            const obj = model.scene.clone(); 
-            obj.position.copy(posicion); 
-            obj.scale.set(3, 3, 3);
-            scene.add(obj);
-
-            // Animación de caída
-            const velocidadDeCaída = 0.5; // Ajusta la velocidad de caída según sea necesario
+        // Función para iniciar la caída de la roca
+        function iniciarCaída(roca) {
+            const velocidadDeCaída = 0.7; // Ajusta la velocidad de caída según sea necesario
             animate();
 
             function animate() {
-                obj.position.y -= velocidadDeCaída;
-                
+                roca.position.y -= velocidadDeCaída;
+
                 // Verificar si la roca ha llegado al suelo
-                if (obj.position.y <= -7) {
-                    // Detener la animación
+                if (roca.position.y <= -7) {
+                    // Reproducir sonido
+                    reproducirSonido();
+                    //temblor
+                    simularTemblor();
                     return;
                 }
 
                 requestAnimationFrame(animate);
             }
         }
-    );
+
+       // Función para simular temblor en la cámara
+       function simularTemblor() {
+            const temblorIntensity = 0.1; // Intensidad del temblor
+            const temblorDuration = 700; // Duración del temblor en milisegundos
+
+            const initialPosition = camera.position.clone(); // Guarda la posición inicial de la cámara
+
+            let endTime = Date.now() + temblorDuration;
+
+            function shake() {
+                const currentTime = Date.now();
+                if (currentTime <= endTime) {
+                    const randomOffsetX = Math.random() * temblorIntensity - temblorIntensity / 2;
+                    const randomOffsetY = Math.random() * temblorIntensity - temblorIntensity / 2;
+                    const randomOffsetZ = Math.random() * temblorIntensity - temblorIntensity / 2;
+
+                    camera.position.set(
+                        initialPosition.x + randomOffsetX,
+                        initialPosition.y + randomOffsetY,
+                        initialPosition.z + randomOffsetZ
+                    );
+
+                    requestAnimationFrame(shake);
+                }
+                else {
+                    // Restaurar la posición original de la cámara
+                    camera.position.copy(initialPosition);
+                }
+            }
+
+            shake(); }
+
+        // Función para reproducir el sonido cuando la roca llegue al suelo
+        function reproducirSonido() {
+            const listener = new THREE.AudioListener();
+            camera.add(listener);
+            const sound = new THREE.Audio(listener);
+            const audioLoader = new THREE.AudioLoader();
+
+            audioLoader.load('./explosion.mp3', function(buffer) {
+                sound.setBuffer(buffer);
+                sound.setVolume(0.5); // Ajusta el volumen según sea necesario
+                sound.play();
+            });
+        }
+    }
+);
 }
 
-// Llamadas a la función para cargar y hacer caer los modelos de rocas
-cargarModeloEnPosicionYCaer(new THREE.Vector3(-17, 50, 0));
-cargarModeloEnPosicionYCaer(new THREE.Vector3(3, 50, -17));
-cargarModeloEnPosicionYCaer(new THREE.Vector3(20, 50, 4));
-cargarModeloEnPosicionYCaer(new THREE.Vector3(-7, 50, 20));
-cargarModeloEnPosicionYCaer(new THREE.Vector3(10, 50, 4));
-// Agrega más llamadas para cargar más rocas si es necesario
+// Llamadas a la función para cargar y hacer caer los modelos de rocas con retraso
+cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(-17, 50, 0), 100); 
+cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(3, 50, -17), 7000); 
+cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(20, 50, 4), 20000);
+cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(-7, 50, 20),40000); 
+cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(10, 50, 4), 80000); 
 
-*/
+
 animate();
+
+
 function animate() {
         requestAnimationFrame(animate);
 
@@ -317,21 +318,16 @@ for (let i = 0; i < smokeParticles.length; i++) {
         renderer.render(scene, camera);
       }
 
-
-
-
-
-
-      
+//AUDIO SOUNDTRACK
       const listener = new THREE.AudioListener();
 camera.add( listener );
 const sound = new THREE.Audio( listener );
 const audioLoader = new THREE.AudioLoader();
 
-audioLoader.load( './3ernivelost.mp3', function( buffer ) {
+audioLoader.load( './ost3.mp3', function( buffer ) {
 	sound.setBuffer( buffer );
 	sound.setLoop( true );
-	sound.setVolume( 0.1 );
+	sound.setVolume( 0.5 );
 	sound.play();
 });
 
@@ -341,6 +337,12 @@ function onWindowResize() {
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
+
+    // Agregar evento de clic al botón de pausa
+    document.getElementById("pausaButton").addEventListener("click", function() {
+            // Redireccionar a la página de pausa
+            window.location.href = "pausa.html";
+        });
 
     </script>
     
