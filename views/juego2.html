@@ -7,44 +7,63 @@
     <style>
         body {
           margin: 0;
-
-          #pausaButton {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 9999;
-
-            text-decoration: none;
-    color: white; 
-    background-color: #ADD8E6; 
-    padding: 5px 15px; 
-    border-radius: 40px;
-    display: inline-block;
-    transition: background-color 0.3s;
-    width: 100px; 
-    font-size: 10px;
-        }
         }
       </style>
 </head>
 <body>
-     <!-- Botón de pausa -->
-     <button id="pausaButton">Pausa</button>
+    <div id="pauseModal" class="modal">
+        <div class="modal-content">
+            <img src="../assets/pictures/logo1.jpg" alt="PawPush Paradise Logo" class="logo">
+            <h1>Pausa</h1>
+            <ul>
+              <li><a href="#" id="resumen">Resumen</a></li>
+              <li><a href="../views/config.html" id="opciones">Opciones</a></li>
+              <li><a href="#" id="salir">Menu Principal</a></li>
+            </ul>
+        </div>
+      </div>
     <script type="module">
-        import * as THREE from "./three.module.js";
-      import { OrbitControls } from "./OrbitControls.js";
-      import { STLLoader } from "./STLLoader.js";
-      import { GLTFLoader } from "./GLTFLoader.js";
+        import * as THREE from './three.module.js';
+  import { OrbitControls } from './OrbitControls.js';
+  import { GLTFLoader } from './GLTFLoader.js';
+  import { TextGeometry } from './TextGeometry.js';
+  import { FontLoader } from './FontLoader.js';
+  import Player from './scripts/player.js';
+  import PlayerControls from './scripts/playerControls.js';
+  import { checkPlayerCollisions, updatePhysics } from './scripts/physics.js';
+  import { db } from './scripts/firebaseConfig.js';
+  import {      
+      ref,
+      onValue,
+      set,
+      update,
+      remove,
+      get
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  import { cargarModeloEnPosicion, cargarModelo, cargarAnimaciones, cargarPowerupEnPosicion, cargarMonedaEnPosicion } from './utils.js';
 
+  const roomId = localStorage.getItem('roomId');
+  const currentUser = JSON.parse(localStorage.getItem('currentUser'));
 
-      const scene = new THREE.Scene();
+  if (!roomId || !currentUser) {
+      alert("No se pudo cargar el ID de la sala o el usuario. Redirigiendo al inicio de sesión.");
+      window.location.href = 'index.html';
+  }
 
-        //luz ambiental
-      const light = new THREE.AmbientLight(0x9c662d, -0.1); // soft white light
-    scene.add(light);
+  const scene = new THREE.Scene();
+  const loader = new THREE.TextureLoader();
+  const clock = new THREE.Clock();
+  const mixers = [];
+  
+  const players = {};
+  let rayoModel = null;
+  let animationFrameId;
+  let difficulty, gameMode;
+  const monedas = [];
+  let gameEnded = false;
 
-       
-      const loader = new THREE.TextureLoader();
+  let isPaused = false;
+
       loader.load("./fondo2.jpeg", function (texture) {
         scene.background = texture;
       });
@@ -52,145 +71,259 @@
       const camera = new THREE.PerspectiveCamera(60,window.innerWidth / window.innerHeight);
       camera.position.set(0, 45, 5);
 
+      const ambientLight = new THREE.AmbientLight(0x9c662d, -0.1); // Light blue color
+  scene.add(ambientLight);
+
+  
+  const luz = new THREE.PointLight(0xff0000, 1, 100);
+  luz.position.set(13, 2, 0);
+  scene.add(luz);
+
       const hemisphereLight = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
       scene.add(hemisphereLight);
 
       const renderer = new THREE.WebGLRenderer();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      document.body.appendChild(renderer.domElement);
-      const cameraControl = new OrbitControls(camera, renderer.domElement);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.domElement.tabIndex = '0';
+  document.body.appendChild(renderer.domElement);
+  renderer.domElement.focus();
+  new OrbitControls(camera, renderer.domElement);
 
-      const loaderGLTF = new GLTFLoader();
+  async function init() {
+    const terrainMesh = await cargarModeloEnPosicion('./modelos/terreno2.glb', new THREE.Vector3(0, 0, 0), new THREE.Vector3(13, 13, 13), scene, mixers);
 
-      //desierto
-      loaderGLTF.load(
-        "./modelos/terreno2.glb",
-        function (model) {
-          const obj = model.scene;
-          obj.scale.set(13, 13, 13);
-         // obj.rotateX(Math.PI / 2);
-          scene.add(obj);
+   
+    const posicionesPinos = [
+      new THREE.Vector3(-20, 2, 0),
+      new THREE.Vector3(3, 2, -17),
+      new THREE.Vector3(20, 2, 4),
+      new THREE.Vector3(20, 2, 0),
+      new THREE.Vector3(0, 2, -20),
+      new THREE.Vector3(0, 1, 20),
+    ];
+
+    posicionesPinos.forEach(pos => cargarModeloEnPosicion('./modelos/roca1.glb', pos, new THREE.Vector3(3, 3, 3), scene, mixers));
+
+    cargarModeloEnPosicion('./modelos/granroca.glb', new THREE.Vector3(-17, 8, -21), new THREE.Vector3(25, 25, 25), scene, mixers);
+    cargarModeloEnPosicion('./modelos/camello.glb', new THREE.Vector3(-6, 1, -17), new THREE.Vector3(3, 3, 3), scene, mixers);
+    cargarPowerupEnPosicion('./modelos/rayo.glb', new THREE.Vector3(-13, 2, 0), new THREE.Vector3(0.8, 0.5, 0.8), scene, mixers);
+    
+    await initPlayer(terrainMesh);
+
+    // Manejar la información de la sala
+    const roomRef = ref(db, `rooms/${roomId}`);
+    const roomSnapshot = await get(roomRef);
+    const roomData = roomSnapshot.val();
+    difficulty = roomData.difficulty;
+    gameMode = roomData.gameMode;
+
+    // Add 15 coins randomly if game mode is "mode2"
+    if (gameMode === 'mode2') {
+        for (let i = 0; i < 15; i++) {
+            const randomX = Math.random() * 45 - 25; 
+            const randomZ = Math.random() * 45 - 25; 
+            cargarMonedaEnPosicion('./modelos/Moneda.glb', new THREE.Vector3(randomX, 3, randomZ), new THREE.Vector3(0.1, 0.1, 0.1), scene, mixers).then(moneda => {
+                monedas.push(moneda);
+            });
         }
-      );
+    }
 
-
-//roca grande
-      loaderGLTF.load(
-        "./modelos/granroca.glb",
-        function (model) {
-          const obj = model.scene;
-          obj.scale.set(25, 25, 25);
-          obj.position.set(-17, 8, -21);
-         // obj.rotateX(Math.PI / 2);
-          scene.add(obj);
+    onValue(roomRef, (snapshot) => {
+        const roomData = snapshot.val();
+        difficulty = roomData.difficulty;
+        gameMode = roomData.gameMode;
+      
+        // Manejar la información de los jugadores
+        const playersData = roomData.players;
+        for (const playerId in playersData) {
+            if (playersData.hasOwnProperty(playerId)) {
+                if (!players[playerId]) {
+                    // Añadir nuevo jugador a la escena
+                    addPlayerToScene(playerId, playersData[playerId], terrainMesh);
+                } else {
+                    // Actualizar jugador existente
+                    updatePlayerFromDatabase(playerId, playersData[playerId]);
+                }
+            }
         }
-      );
+    });
 
+    startGame();
+  }
+
+  async function initPlayer(terrainMesh) {
+    const playerModelData = await cargarModelo('./modelos/StaticZorroR.glb');
+    const initialPosition = { x: 0, y: 8, z: 0 };
+    const initialRotation = { x: 0, y: 0, z: 0 };
+
+    playerModelData.scene.position.set(initialPosition.x, initialPosition.y, initialPosition.z);
+    playerModelData.scene.rotation.set(initialRotation.x, initialRotation.y, initialRotation.z);
+    playerModelData.scene.scale.set(0.8, 0.8, 0.8);
+    playerModelData.scene.rotateY(Math.PI / 2);
+
+    renderer.domElement.tabIndex = '0';
+    renderer.domElement.focus();
+    const playerControls = new PlayerControls(camera, renderer.domElement);
+    // Obtener el ID del host de la base de datos y compararlo con el usuario actual
+    const roomRef = ref(db, `rooms/${roomId}`);
+    const roomSnapshot = await get(roomRef);
+    const roomData = roomSnapshot.val();
+    const hostId = roomData.host;
+    console.log(roomData);
+    console.log(roomData.roomId);
+    console.log(roomRef);
+
+    const isHost = currentUser.uid === hostId;
+    const newPlayer = new Player(currentUser.uid, playerModelData, "Zorro", playerControls, scene, terrainMesh, db,gameMode, roomId, isHost);
+
+    await cargarAnimaciones('./modelos/AnimacionZorroRun.glb', newPlayer.animations.mixer);
+
+    newPlayer.animationsMap = {
+        'Run': 'Armature|mixamo.com|Layer0',
+    };
+
+    players[currentUser.uid] = newPlayer;
+    scene.add(playerModelData.scene);
+    await newPlayer.saveToDatabase();
+  }
+
+  async function addPlayerToScene(playerId, playerData, terrainMesh) {
+    if (!playerData.position || !playerData.rotation) {
+        console.error(`Player data incomplete for playerId: ${playerId}`, playerData);
+        return;
+    }
+
+    const playerModelData = await cargarModelo('./modelos/StaticConejoR.glb');
+    playerModelData.scene.position.set(playerData.position.x, playerData.position.y, playerData.position.z);
+    playerModelData.scene.rotation.set(playerData.rotation.x, playerData.rotation.y, playerData.rotation.z);
+    playerModelData.scene.scale.set(0.8, 0.8, 0.8);
+
+    // Obtener el ID del host de la base de datos y compararlo con el usuario actual
+    const roomRef = ref(db, `rooms/${roomId}`);
+    const roomSnapshot = await get(roomRef);
+    const roomData = roomSnapshot.val();
+    const hostId = roomData.host;
+
+    const isHost = currentUser.uid === hostId;
+    const newPlayer = new Player(playerId, playerModelData, "Conejo", null, scene, terrainMesh, db,gameMode, roomId, isHost);
+    newPlayer.mesh.position.set(playerData.position.x, playerData.position.y, playerData.position.z);
+    newPlayer.mesh.rotation.set(playerData.rotation.x, playerData.rotation.y, playerData.rotation.z);
+    newPlayer.velocity.set(playerData.velocity.x, playerData.velocity.y, playerData.velocity.z);
+    newPlayer.tackleState = playerData.tackleState;
+    newPlayer.hitbox.set(new THREE.Vector3(playerData.hitbox.min.x, playerData.hitbox.min.y, playerData.hitbox.min.z), new THREE.Vector3(playerData.hitbox.max.x, playerData.hitbox.max.y, playerData.hitbox.max.z));
+    newPlayer.tackleHitbox.set(new THREE.Vector3(playerData.tackleHitbox.min.x, playerData.tackleHitbox.min.y, playerData.tackleHitbox.min.z), new THREE.Vector3(playerData.tackleHitbox.max.x, playerData.tackleHitbox.max.y, playerData.tackleHitbox.max.z));
+
+    await cargarAnimaciones('./modelos/AnimacionConejoRun.glb', newPlayer.animations.mixer);
+
+    newPlayer.animationsMap = {
+        'Run': 'Armature|mixamo.com|Layer0',
+    };
+
+    players[playerId] = newPlayer;
+    scene.add(playerModelData.scene);
+  }
+
+  function updatePlayerFromDatabase(playerId, playerData) {
+    const player = players[playerId];
+    player.mesh.position.set(playerData.position.x, playerData.position.y, playerData.position.z);
+    player.mesh.rotation.set(playerData.rotation.x, playerData.rotation.y, playerData.rotation.z);
+    player.velocity.set(playerData.velocity.x, playerData.velocity.y, playerData.velocity.z);
+    player.tackleState = playerData.tackleState;
+    player.hitbox.set(new THREE.Vector3(playerData.hitbox.min.x, playerData.hitbox.min.y, playerData.hitbox.min.z), new THREE.Vector3(playerData.hitbox.max.x, playerData.hitbox.max.y, playerData.hitbox.max.z));
+    player.tackleHitbox.set(new THREE.Vector3(playerData.tackleHitbox.min.x, playerData.tackleHitbox.min.y, playerData.tackleHitbox.min.z), new THREE.Vector3(playerData.tackleHitbox.max.x, playerData.tackleHitbox.max.y, playerData.tackleHitbox.max.z));
+  }
+
+  function startGame() {
+    if (localStorage.getItem('isHost') === 'true') {
+        console.log("Soy el host, iniciar lógica de host...");
+        animationFrameId = requestAnimationFrame(animateHost);
+    } else {
+        console.log("Soy un cliente, iniciar lógica de cliente...");
+        animationFrameId = requestAnimationFrame(animateClient);
+    }
 
     
-//Funcion para cargar rocas
-function cargarModeloEnPosicion(posicion) {
-    loaderGLTF.load(
-        "./modelos/roca1.glb",
-        function (model) {
-            const obj = model.scene.clone(); 
-            obj.position.copy(posicion); 
-            obj.scale.set(3, 3, 3);
-            scene.add(obj); 
-        }
-    );
-}
+  }
 
-// Se agregan rocas
-cargarModeloEnPosicion(new THREE.Vector3(-20, 2, 0));
-cargarModeloEnPosicion(new THREE.Vector3(3, 2, -17));
-cargarModeloEnPosicion(new THREE.Vector3(20, 2, 4));
-cargarModeloEnPosicion(new THREE.Vector3(20, 2, 0));
-cargarModeloEnPosicion(new THREE.Vector3(0, 2, -20)); 
-cargarModeloEnPosicion(new THREE.Vector3(0, 1, 20)); 
+  function endGame() {
+    //cancelAnimationFrame(animationFrameId);
+    console.log("Juego finalizado.");
+    gameEnded = true;
+    
+    
+  }
 
+  function createMessage(text) {
+    const loader = new FontLoader();
+    loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function (font) {
+      const geometry = new TextGeometry(text, {
+        font: font,
+        size: 2,
+        depth: 1,
+        curveSegments: 12,
+        bevelEnabled: true,
+        bevelThickness: 0.1,
+        bevelSize: 0.1,
+        bevelSegments: 5,
+      });
 
-//Camello
-loaderGLTF.load(
-    "./modelos/camello.glb",
-    function (gltf) {
-        console.log("Modelo cargado correctamente:", gltf);
-        const model = gltf.scene;
-        const animations = gltf.animations;
+      const material = new THREE.MeshBasicMaterial({ color: 0x0033AA });
+      const mesh = new THREE.Mesh(geometry, material  );
+      mesh.position.set(-20, 10, 0);
+      scene.add(mesh);
+    });
+  }
 
-        // Escalar y posicionar el modelo
-        model.scale.set(3,3,3);
-        model.position.set(-6, 1, -17); 
-        scene.add(model);
+  function crearParticulas() {
+    const cantidadParticulas = 500; // Número de partículas
+    const geometriaParticulas = new THREE.SphereGeometry(0.05); // Geometría de las partículas (más pequeñas para simular arena)
+    const materialParticulas = new THREE.MeshBasicMaterial({ color: 0x8B4513 }); // Material de las partículas (color marrón para simular arena)
 
-        // Crear un AnimationMixer y reproducir las animaciones
-        const mixer = new THREE.AnimationMixer(model);
-        animations.forEach((clip) => {
-            mixer.clipAction(clip).play();
-        });
+    // Crear un grupo para almacenar todas las partículas
+    const grupoParticulas = new THREE.Group();
 
-        // Función de animación
-        function animate() {
-            requestAnimationFrame(animate);
-            mixer.update(0.016); // Actualizar la animación con el tiempo delta
-            renderer.render(scene, camera);
-        }
+    // Distribuir aleatoriamente las partículas en el área del nivel y asignarles una velocidad
+    for (let i = 0; i < cantidadParticulas; i++) {
+        const particula = new THREE.Mesh(geometriaParticulas, materialParticulas);
+        const x = Math.random() * 40 - 20; // Coordenada x aleatoria
+        const y = Math.random() * 20 + 10; // Coordenada y aleatoria (altura)
+        const z = Math.random() * 40 - 20; // Coordenada z aleatoria
+        particula.position.set(x, y, z); // Establecer la posición inicial de la partícula
 
-        animate(); // Iniciar la animación
-    },
-    // Función de progreso (opcional)
-    function (xhr) {
-        console.log((xhr.loaded / xhr.total * 100) + '% cargado');
-    },
-    // Función de manejo de errores (opcional)
-    function (error) {
-        console.error('Error al cargar el modelo:', error);
+        // Asignar una velocidad aleatoria hacia abajo y hacia los lados para simular una tormenta de arena
+        const velocidad = new THREE.Vector3(Math.random() * 0.1 - 0.05, -Math.random() * 0.02 - 0.01, Math.random() * 0.1 - 0.05);
+        particula.userData.velocidad = velocidad;
+
+        grupoParticulas.add(particula); // Agregar la partícula al grupo
     }
-);
 
+    // Agregar el grupo de partículas al nivel
+    scene.add(grupoParticulas);
 
-// Función para cargar el modelo de rayo y añadir una animación de rotación
-function cargarModeloConAnimacion(posicion) {
-    loaderGLTF.load(
-        "./modelos/rayo.glb",
-        function (model) {
-            const obj = model.scene.clone(); 
-            obj.position.copy(posicion); 
-            obj.scale.set(0.3, 0.5, 0.3);
-            scene.add(obj); 
-            
-            // Crear una luz que emita desde el modelo
-            const luz = new THREE.PointLight(0xff0000, 1, 100); // Color rojo, intensidad 1
-            obj.add(luz); // Agregar la luz al modelo
+    // Función para actualizar la posición de las partículas en cada cuadro de animación
+    function actualizarParticulas() {
+        grupoParticulas.children.forEach(particula => {
+            particula.position.add(particula.userData.velocidad); // Actualizar la posición de la partícula según su velocidad
 
-            // Guardar el objeto en una variable para acceder a él en la función de animación
-            const rayoModel = obj;
-
-            // Función de animación
-            function animateRayo() {
-                // Rotar el modelo en el eje Y en cada cuadro de animación
-                rayoModel.rotation.y += 0.01; // Ajusta la velocidad de rotación según tus necesidades
-
-                // Renderizar la escena
-                renderer.render(scene, camera);
-
-                // Llamar a animateRayo() en el siguiente cuadro de animación
-                requestAnimationFrame(animateRayo);
+            // Resetear la posición de la partícula si cae por debajo del nivel o sale del área visible
+            if (particula.position.y < 0 || particula.position.x < -20 || particula.position.x > 20 || particula.position.z < -20 || particula.position.z > 20) {
+                particula.position.y = Math.random() * 20 + 10;
+                particula.position.x = Math.random() * 40 - 20;
+                particula.position.z = Math.random() * 40 - 20;
             }
+        });
+    }
 
-            // Iniciar la animación
-            animateRayo();
+    // Llamar a la función de actualización en cada cuadro de animación
+    renderer.setAnimationLoop(() => {
+        if (!isPaused) {
+            actualizarParticulas();
         }
-    );
+        renderer.render(scene, camera);
+    });
 }
 
-
-// Llamar a la función para cargar el modelo con animación
-cargarModeloConAnimacion(new THREE.Vector3(13, 2, 0));
-
-
-// Función para crear partículas
-function crearParticulas() {
+/* function crearParticulas2() {
     const cantidadParticulas = 500; // Número de partículas
     const geometriaParticulas = new THREE.SphereGeometry(0.1); // Geometría de las partículas (bolas amarillas)
     const materialParticulas = new THREE.MeshBasicMaterial({ color: 0xffff00 }); // Material de las partículas (amarillo)
@@ -228,35 +361,158 @@ function crearParticulas() {
         actualizarParticulas();
         renderer.render(scene, camera);
     });
-}
+} */
 
-           // Crear las partículas
-           crearParticulas();
-    
-function animate() {
-        requestAnimationFrame(animate);
-        renderer.render(scene, camera);
-      }
-      animate();
+function animateHost() {
+   
+   animationFrameId = requestAnimationFrame(animateHost);
 
-      const listener = new THREE.AudioListener();
-camera.add( listener );
-const sound = new THREE.Audio( listener );
+   
+   const deltaTime = clock.getDelta();
+
+   
+  
+   mixers.forEach(mixer => mixer.update(deltaTime));
+
+   for (const playerId in players) {
+       players[playerId].update(deltaTime);
+       
+       if (gameMode === 'mode1'  ) {
+            
+           if (players[playerId].mesh.position.y < -10  ) {
+               
+             if (!gameEnded)  createMessage(`Jugador ${players[playerId].characterName} perdio por caerse del mapa.`);
+               
+               endGame();
+               
+           }
+       }
+
+   }
+   
+   checkPlayerCollisions(Object.values(players),difficulty,roomId,monedas,scene); 
+
+   if (rayoModel) {
+       rayoModel.rotation.y += 0.01;
+   }
+
+   renderer.render(scene, camera);
+   
+   updateDatabase();
+   if (gameMode === 'mode2' && monedas.length === 0  ) {
+       const winner = Object.values(players).reduce((prev, current) => (prev.points > current.points) ? prev : current);
+       
+       if (!gameEnded)
+       createMessage(`Jugador ${winner.characterName} ha ganado con ${winner.points} puntos.`);
+       
+       endGame();
+       
+       
+   }
+  
+ }
+
+ function animateClient() {
+   if (gameEnded) return;
+
+
+   animationFrameId = requestAnimationFrame(animateClient);
+   const deltaTime = clock.getDelta();
+
+   
+   
+   mixers.forEach(mixer => mixer.update(deltaTime));
+
+   for (const playerId in players) {
+       players[playerId].update(deltaTime);
+   }
+   
+   if (rayoModel) {
+       rayoModel.rotation.y += 0.01;
+   }
+
+   renderer.render(scene, camera);
+ }
+
+ let lastDatabaseUpdate = Date.now();
+ const databaseUpdateInterval = 1000;
+
+ function updateDatabase() {
+   const now = Date.now();
+   if (now - lastDatabaseUpdate >= databaseUpdateInterval) {
+       for (const playerId in players) {
+           const player = players[playerId];
+           player.saveToDatabase(); // Nuevo cambio
+       }
+       lastDatabaseUpdate = now;
+   }
+ }
+
+ // Pausar y reanudar el juego
+ const pauseModal = document.getElementById('pauseModal');
+const listener = new THREE.AudioListener();
+camera.add(listener);
+const sound = new THREE.Audio(listener);
 const audioLoader = new THREE.AudioLoader();
-//SONIDO SOUNDTRACK
-audioLoader.load( './Music_desierto.mp3', function( buffer ) {
-	sound.setBuffer( buffer );
-	sound.setLoop( true );
-	sound.setVolume( 0.1 );
-	sound.play();
+
+audioLoader.load('./Music_desierto.mp3', function(buffer) {
+    sound.setBuffer(buffer);
+    sound.setLoop(true);
+    sound.setVolume(0.2);
+    sound.play();
 });
 
- // Agregar evento de clic al botón de pausa
- document.getElementById("pausaButton").addEventListener("click", function() {
-            // Redireccionar a la página de pausa
-            window.location.href = "pausa.html";
-        });
+  function togglePause() {
+    if (isPaused) {
+        pauseModal.style.display = 'none';
+        isPaused = false;
+        startGame();  
+        sound.play();  
+    } else {
+        pauseModal.style.display = 'flex';
+        isPaused = true;
+        cancelAnimationFrame(animationFrameId);  
+        sound.pause();  
+    }
+}
+  
 
+  document.addEventListener('keydown', function(event) {
+      if (event.key === 'p') {
+          togglePause();
+      }
+  });
+
+  document.getElementById('resumen').addEventListener('click', function(event) {
+      event.preventDefault();
+      togglePause();
+  });
+
+  document.getElementById('salir').addEventListener('click', function(event) {
+      event.preventDefault();
+      endGame();
+
+      if (localStorage.getItem('isHost') === 'true') {
+          // Eliminar toda la sala
+          remove(ref(db, `rooms/${roomId}`)).then(() => {
+              window.location.href = '../views/index.html';
+          }).catch((error) => {
+              console.error("Error al eliminar la sala: ", error);
+          });
+      } else {
+          // Eliminar el jugador de la sala
+          remove(ref(db, `rooms/${roomId}/players/${currentUser.uid}`)).then(() => {
+              window.location.href = '../views/index.html';
+          }).catch((error) => {
+              console.error("Error al eliminar el jugador: ", error);
+          });
+      }
+  });
+
+  init();
+  crearParticulas();
+ 
+  
     </script>
     
 </body>

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nivel Cañon</title>
+    <style>
+        body {
+          margin: 0;
+        }
+
+        #pausaButton {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 9999;
+
+            text-decoration: none;
+    color: white; 
+    background-color: #ADD8E6; 
+    padding: 5px 15px; 
+    border-radius: 40px;
+    display: inline-block;
+    transition: background-color 0.3s;
+    width: 100px; 
+    font-size: 10px;
+        }
+ 
+      </style>
+</head>
+
+<body>
+      <!-- Botón de pausa -->
+      <button id="pausaButton">Pausa</button>
+
+
+    <script type="module">
+        import * as THREE from "./three.module.js";
+      import { OrbitControls } from "./OrbitControls.js";
+      import { STLLoader } from "./STLLoader.js";
+      import { GLTFLoader } from "./GLTFLoader.js";
+
+      let clock = new THREE.Clock(); //tiempo
+      let delta = 0;
+
+      const scene = new THREE.Scene();
+
+//luz ambiental
+      const light = new THREE.AmbientLight(0x9c2d2d, 1.0); // soft white light
+    scene.add(light);
+
+     //luz focal
+     const spotLight = new THREE.SpotLight(0xf0bd00);
+spotLight.position.set(30, 10, 19);
+spotLight.angle = Math.PI / 4; // Ángulo de apertura del haz
+spotLight.penumbra = 0; // Suavidad del borde del haz
+spotLight.decay = 2; // Atenuación de la luz con la distancia
+spotLight.distance = 250; // Distancia máxima de alcance
+scene.add(spotLight);
+
+      scene.fog = new THREE.Fog(0xc0f0ff, 0.1, 1000); //niebla
+      const loader = new THREE.TextureLoader(); 
+//FONDO
+      loader.load("./fondo3.jpg", function (texture) {
+        scene.background = texture;
+      });
+
+      const camera = new THREE.PerspectiveCamera(60,window.innerWidth / window.innerHeight);
+      camera.position.set(0, 50, 0);
+
+     //LUZ
+      const hemisphereLight = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
+      scene.add(hemisphereLight);
+
+      //RENDER
+      const renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+      const cameraControl = new OrbitControls(camera, renderer.domElement);
+
+      //textura niebla
+      const smokeTexture = new THREE.TextureLoader().load("./modelos/humo.png");
+        smokeTexture.encoding = THREE.sRGBEncoding;
+        const smokeGeometry = new THREE.PlaneGeometry(700, 50);
+
+        const smokeMaterial = new THREE.MeshLambertMaterial({
+            map: smokeTexture,
+            emissive: 5E0000,
+            opacity: 0.25,
+            transparent: true
+        });
+
+        let smokeParticles = [];
+
+        // Corrección en el bucle for
+        for (let i = 0; i < 40; i++) {
+            let smokeElement = new THREE.Mesh(smokeGeometry, smokeMaterial);
+            smokeElement.scale.set(1,1,1,);
+
+            // Corrección en el uso de Math.random()
+            smokeElement.position.set(Math.random() * 200 - 0, 10, Math.random() * 100 - 50);
+            
+            smokeElement.rotation.z = Math.random() * 360;
+
+            scene.add(smokeElement);
+            smokeParticles.push(smokeElement);
+        }
+
+        window.addEventListener('resize', onWindowResize);
+
+//MODELO TERRENO
+      const loaderGLTF = new GLTFLoader();
+      //desierto
+      loaderGLTF.load(
+        "./modelos/terreno3.glb",
+        function (model) {
+          const obj = model.scene;
+          obj.scale.set(0.1, 0.1, 0.1);
+         // obj.rotateX(Math.PI / 2);
+          scene.add(obj);
+        }
+      );
+//MODELO VOLCAN
+loaderGLTF.load(
+        "./modelos/volcano.glb",
+        function (model) {
+          const obj = model.scene;
+          obj.scale.set(10, 10, 10);
+          obj.position.set(27, -7, 19);
+         // obj.rotateX(Math.PI / 2);
+          scene.add(obj);
+        }
+      );
+
+
+//tigre
+loaderGLTF.load(
+    "./modelos/tiger_monster_-_animated.glb",
+    function (gltf) {
+        console.log("Modelo cargado correctamente:", gltf);
+        const model = gltf.scene;
+        const animations = gltf.animations;
+
+        // Escalar y posicionar el modelo
+        model.scale.set(3,3,3);
+        model.position.set(-6, -8, -17); 
+        scene.add(model);
+
+        // Crear un AnimationMixer y reproducir las animaciones
+        const mixer = new THREE.AnimationMixer(model);
+        animations.forEach((clip) => {
+            mixer.clipAction(clip).play();
+        });
+
+        // Función de animación
+        function animate() {
+            requestAnimationFrame(animate);
+            mixer.update(0.016); // Actualizar la animación con el tiempo delta
+            renderer.render(scene, camera);
+        }
+
+        animate(); // Iniciar la animación
+    },
+    // Función de progreso (opcional)
+    function (xhr) {
+        console.log((xhr.loaded / xhr.total * 100) + '% cargado');
+    },
+    // Función de manejo de errores (opcional)
+    function (error) {
+        console.error('Error al cargar el modelo:', error);
+    }
+);
+
+
+// Función para cargar el modelo de rayo y añadir una animación de rotación
+function cargarModeloConAnimacion(posicion) {
+    loaderGLTF.load(
+        "./modelos/rayo.glb",
+        function (model) {
+            const obj = model.scene.clone(); 
+            obj.position.copy(posicion); 
+            obj.scale.set(0.3, 0.5, 0.3);
+            scene.add(obj); 
+            
+            // Crear una luz que emita desde el modelo
+            const luz = new THREE.PointLight(0xff0000, 1, 100); // Color rojo, intensidad 1
+            obj.add(luz); // Agregar la luz al modelo
+
+            // Guardar el objeto en una variable para acceder a él en la función de animación
+            const rayoModel = obj;
+
+            // Función de animación
+            function animateRayo() {
+                // Rotar el modelo en el eje Y en cada cuadro de animación
+                rayoModel.rotation.y += 0.01; // Ajusta la velocidad de rotación según tus necesidades
+
+                // Renderizar la escena
+                renderer.render(scene, camera);
+
+                // Llamar a animateRayo() en el siguiente cuadro de animación
+                requestAnimationFrame(animateRayo);
+            }
+
+            // Iniciar la animación
+            animateRayo();
+        }
+    );
+}
+
+// Llamar a la función para cargar el modelo con animación
+cargarModeloConAnimacion(new THREE.Vector3(13, -5, 15));
+
+
+
+// Función para cargar modelo de roca en una posición específica y hacer que caiga después de un retraso
+function cargarModeloEnPosicionYCaerConRetraso(posicion, retraso) {
+    loaderGLTF.load(
+    "./modelos/meteor.glb",
+    function (model) {
+        const obj = model.scene.clone(); 
+        obj.position.copy(posicion); 
+        obj.scale.set(3, 3, 3);
+        scene.add(obj);
+
+        // Temporizador para iniciar la caída después de un retraso
+        setTimeout(() => {
+            iniciarCaída(obj);
+        }, retraso);
+
+        // Función para iniciar la caída de la roca
+        function iniciarCaída(roca) {
+            const velocidadDeCaída = 0.7; // Ajusta la velocidad de caída según sea necesario
+            animate();
+
+            function animate() {
+                roca.position.y -= velocidadDeCaída;
+
+                // Verificar si la roca ha llegado al suelo
+                if (roca.position.y <= -7) {
+                    // Reproducir sonido
+                    reproducirSonido();
+                    //temblor
+                    simularTemblor();
+                    return;
+                }
+
+                requestAnimationFrame(animate);
+            }
+        }
+
+       // Función para simular temblor en la cámara
+       function simularTemblor() {
+            const temblorIntensity = 0.1; // Intensidad del temblor
+            const temblorDuration = 700; // Duración del temblor en milisegundos
+
+            const initialPosition = camera.position.clone(); // Guarda la posición inicial de la cámara
+
+            let endTime = Date.now() + temblorDuration;
+
+            function shake() {
+                const currentTime = Date.now();
+                if (currentTime <= endTime) {
+                    const randomOffsetX = Math.random() * temblorIntensity - temblorIntensity / 2;
+                    const randomOffsetY = Math.random() * temblorIntensity - temblorIntensity / 2;
+                    const randomOffsetZ = Math.random() * temblorIntensity - temblorIntensity / 2;
+
+                    camera.position.set(
+                        initialPosition.x + randomOffsetX,
+                        initialPosition.y + randomOffsetY,
+                        initialPosition.z + randomOffsetZ
+                    );
+
+                    requestAnimationFrame(shake);
+                }
+                else {
+                    // Restaurar la posición original de la cámara
+                    camera.position.copy(initialPosition);
+                }
+            }
+
+            shake(); }
+
+        // Función para reproducir el sonido cuando la roca llegue al suelo
+        function reproducirSonido() {
+            const listener = new THREE.AudioListener();
+            camera.add(listener);
+            const sound = new THREE.Audio(listener);
+            const audioLoader = new THREE.AudioLoader();
+
+            audioLoader.load('./explosion.mp3', function(buffer) {
+                sound.setBuffer(buffer);
+                sound.setVolume(0.5); // Ajusta el volumen según sea necesario
+                sound.play();
+            });
+        }
+    }
+);
+}
+
+// Llamadas a la función para cargar y hacer caer los modelos de rocas con retraso
+cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(-17, 50, 0), 100); 
+cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(3, 50, -17), 7000); 
+cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(20, 50, 4), 20000);
+cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(-7, 50, 20),40000); 
+cargarModeloEnPosicionYCaerConRetraso(new THREE.Vector3(10, 50, 4), 80000); 
+
+
+animate();
+
+
+function animate() {
+        requestAnimationFrame(animate);
+
+        delta = clock.getDelta();
+
+// Animar las partículas de niebla
+for (let i = 0; i < smokeParticles.length; i++) {
+    smokeParticles[i].rotation.z += (delta * 0.12);
+}
+        renderer.render(scene, camera);
+      }
+
+//AUDIO SOUNDTRACK
+      const listener = new THREE.AudioListener();
+camera.add( listener );
+const sound = new THREE.Audio( listener );
+const audioLoader = new THREE.AudioLoader();
+
+audioLoader.load( './ost3.mp3', function( buffer ) {
+	sound.setBuffer( buffer );
+	sound.setLoop( true );
+	sound.setVolume( 0.5 );
+	sound.play();
+});
+
+
+function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+    // Agregar evento de clic al botón de pausa
+    document.getElementById("pausaButton").addEventListener("click", function() {
+            // Redireccionar a la página de pausa
+            window.location.href = "pausa.html";
+        });
+
+    </script>
+    
+</body>
+</html>

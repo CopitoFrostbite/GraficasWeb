@@ -430,7 +430,7 @@ const audioLoader = new THREE.AudioLoader();
 audioLoader.load('./59.mp3', function(buffer) {
     sound.setBuffer(buffer);
     sound.setLoop(true);
-    sound.setVolume(0.6);
+    sound.setVolume(0.2);
     sound.play();
 });
 
@@ -438,13 +438,13 @@ audioLoader.load('./59.mp3', function(buffer) {
     if (isPaused) {
         pauseModal.style.display = 'none';
         isPaused = false;
-        startGame();  // Reanudar el bucle de juego
-        sound.play();  // Reanudar la música
+        startGame();  
+        sound.play();  
     } else {
         pauseModal.style.display = 'flex';
         isPaused = true;
-        cancelAnimationFrame(animationFrameId);  // Pausar el bucle de juego
-        sound.pause();  // Pausar la música
+        cancelAnimationFrame(animationFrameId);  
+        sound.pause();  
     }
 }
   

@@ -45,6 +45,90 @@ export async function cargarMonedaEnPosicion(url, posicion, escala, scene, mixer
     });
 }
 
+export async function cargarModeloEnPosicionYCaerConRetraso(posicion, retraso,scene,camera) {
+    loaderGLTF.load(
+    "./modelos/meteor.glb",
+    function (model) {
+        const obj = model.scene.clone(); 
+        obj.position.copy(posicion); 
+        obj.scale.set(3, 3, 3);
+        scene.add(obj);
+
+        // Temporizador para iniciar la caída después de un retraso
+        setTimeout(() => {
+            iniciarCaída(obj);
+        }, retraso);
+
+        // Función para iniciar la caída de la roca
+        function iniciarCaída(roca) {
+            const velocidadDeCaída = 0.7; // Ajusta la velocidad de caída según sea necesario
+            animate();
+
+            function animate() {
+                roca.position.y -= velocidadDeCaída;
+
+                // Verificar si la roca ha llegado al suelo
+                if (roca.position.y <= -7) {
+                    // Reproducir sonido
+                    reproducirSonido();
+                    //temblor
+                    simularTemblor();
+                    return;
+                }
+
+                requestAnimationFrame(animate);
+            }
+        }
+
+       // Función para simular temblor en la cámara
+       function simularTemblor() {
+            const temblorIntensity = 0.1; // Intensidad del temblor
+            const temblorDuration = 700; // Duración del temblor en milisegundos
+
+            const initialPosition = camera.position.clone(); // Guarda la posición inicial de la cámara
+
+            let endTime = Date.now() + temblorDuration;
+
+            function shake() {
+                const currentTime = Date.now();
+                if (currentTime <= endTime) {
+                    const randomOffsetX = Math.random() * temblorIntensity - temblorIntensity / 2;
+                    const randomOffsetY = Math.random() * temblorIntensity - temblorIntensity / 2;
+                    const randomOffsetZ = Math.random() * temblorIntensity - temblorIntensity / 2;
+
+                    camera.position.set(
+                        initialPosition.x + randomOffsetX,
+                        initialPosition.y + randomOffsetY,
+                        initialPosition.z + randomOffsetZ
+                    );
+
+                    requestAnimationFrame(shake);
+                }
+                else {
+                    // Restaurar la posición original de la cámara
+                    camera.position.copy(initialPosition);
+                }
+            }
+
+            shake(); }
+
+        // Función para reproducir el sonido cuando la roca llegue al suelo
+        function reproducirSonido() {
+            const listener = new THREE.AudioListener();
+            camera.add(listener);
+            const sound = new THREE.Audio(listener);
+            const audioLoader = new THREE.AudioLoader();
+
+            audioLoader.load('./explosion.mp3', function(buffer) {
+                sound.setBuffer(buffer);
+                sound.setVolume(0.5); // Ajusta el volumen según sea necesario
+                sound.play();
+            });
+        }
+    }
+);
+}
+
 export async function cargarPowerupEnPosicion(url, posicion, escala, scene, mixers) {
     return loaderGLTF.loadAsync(url).then(gltf => {
         const obj = gltf.scene;
